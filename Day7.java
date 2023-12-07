@@ -40,7 +40,7 @@ class CamelHand implements Comparable<CamelHand> {
   public String hand;
   public int bid;
   public int strength;
-  public static String ordering = "AKQJT98765432";
+  public static String ordering = "AKQT98765432J";
   public static Map<Character, Integer> order;
 
   CamelHand(String s) {
@@ -63,7 +63,27 @@ class CamelHand implements Comparable<CamelHand> {
   }
 
   private void calculateStrength() {
-    char[] handArr = hand.toCharArray();
+    char[] rawHandArr = hand.toCharArray();
+
+    int jokers = 0;
+    for (int i = 0; i < rawHandArr.length; i++) {
+      if (rawHandArr[i] == 'J') jokers++;
+    }
+
+    if (jokers == 5) {
+      strength = 7;
+      return;
+    }
+
+    //jokers < 5
+    char[] handArr = new char[5 - jokers];
+    for (int i = 0, j = 0; i < rawHandArr.length; i++) {
+      if (rawHandArr[i] != 'J') {
+        handArr[j] = rawHandArr[i];
+        j++;
+      }
+    }
+
     Arrays.sort(handArr);
     int unique = 1;
     int maxCount = 1, currCount = 1;
@@ -77,6 +97,7 @@ class CamelHand implements Comparable<CamelHand> {
         currCount = 1;
       }
     }
+    maxCount += jokers;
 
     strength = 1;
     if (unique == 1) strength = 7;
