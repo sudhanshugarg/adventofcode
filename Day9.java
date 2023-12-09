@@ -30,7 +30,8 @@ class Day9 {
       seq.add(Long.parseLong(sequence[i]));
     }
     int n = sequence.length;
-    calculateNext(seq);
+    //calculateNext(seq);
+    calculatePrev(seq);
     System.out.println(seq.get(n));
     return seq.get(n);
   }
@@ -45,6 +46,18 @@ class Day9 {
     calculateNext(nextDiff);
     seq.add(nextDiff.get(n-1) + seq.get(n-1));
   }
+
+  public static void calculatePrev(List<Long> seq) {
+    if (checkEqual(seq)) {
+      seq.add(seq.get(0));
+      return;
+    }
+    int n = seq.size();
+    List<Long> nextDiff = diffs(seq);
+    calculatePrev(nextDiff);
+    seq.add(seq.get(0) - nextDiff.get(n-1));
+  }
+
 
   public static List<Long> diffs(List<Long> seq) {
     List<Long> nextDiff = new ArrayList<>();
