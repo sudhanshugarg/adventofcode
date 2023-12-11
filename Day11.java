@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 class Day11 {
+  public static long MULT_FACTOR = 1000000;
   public static void main(String[] args) {
     try {
       BufferedReader reader = new BufferedReader(new FileReader(args[0]));
@@ -15,7 +16,7 @@ class Day11 {
         image.add(line);
         line = reader.readLine();
       }
-      int totalPairDistances = galaxyDistances(image);
+      long totalPairDistances = galaxyDistances(image);
       System.out.println(totalPairDistances);
       reader.close();
     } catch (IOException e) {
@@ -23,7 +24,7 @@ class Day11 {
     }
   }
 
-  public static int galaxyDistances(List<String> image) {
+  public static long galaxyDistances(List<String> image) {
     //find the x and y coordinates of each galaxy.
     //find the indices of empty rows
     //find the indices of empty cols
@@ -31,8 +32,8 @@ class Day11 {
     //calculate distances.
 
     List<Galaxy> galaxies = new ArrayList<>();
-    List<Integer> emptyRows = new ArrayList<>();
-    List<Integer> emptyCols = new ArrayList<>();
+    List<Long> emptyRows = new ArrayList<>();
+    List<Long> emptyCols = new ArrayList<>();
     boolean flag = false;
     for (int i = 0; i < image.size(); i++) {
       flag = false;
@@ -43,7 +44,7 @@ class Day11 {
           flag = true;
         }
       }
-      if (!flag) emptyRows.add(i);
+      if (!flag) emptyRows.add(new Long(i));
     }
 
     for (int j = 0; j < image.get(0).length(); j++) {
@@ -54,39 +55,39 @@ class Day11 {
           break;
         }
       }
-      if (!flag) emptyCols.add(j);
+      if (!flag) emptyCols.add(new Long(j));
     }
     updateGalaxyPositions(galaxies, emptyRows, emptyCols);
     return getDistances(galaxies);
   }
 
-  public static int getDistances(List<Galaxy> galaxies) {
-    int total = 0;
+  public static long getDistances(List<Galaxy> galaxies) {
+    long total = 0;
     for (int i = 0; i < galaxies.size(); i++) {
       for (int j = i+1; j < galaxies.size(); j++) {
-        int dist = Math.abs(galaxies.get(i).r - galaxies.get(j).r) + Math.abs(galaxies.get(i).c - galaxies.get(j).c);
+        long dist = Math.abs(galaxies.get(i).r - galaxies.get(j).r) + Math.abs(galaxies.get(i).c - galaxies.get(j).c);
         total += dist;
-        System.out.println(String.valueOf(i+1) + "::" + galaxies.get(i) + ";" + String.valueOf(j+1) + "::" + galaxies.get(j) + " : " + dist);
+        //System.out.println(String.valueOf(i+1) + "::" + galaxies.get(i) + ";" + String.valueOf(j+1) + "::" + galaxies.get(j) + " : " + dist);
       }
     }
     return total;
   }
 
-  public static void printArr(List<Integer> arr) {
+  public static void printArr(List<Long> arr) {
     for (int i = 0; i < arr.size(); i++) {
       System.out.print(arr.get(i) + ",");
     }
     System.out.println();
   }
 
-  public static void updateGalaxyPositions(List<Galaxy> galaxies, List<Integer> emptyRows, List<Integer> emptyCols) {
-    int incr = 0;
+  public static void updateGalaxyPositions(List<Galaxy> galaxies, List<Long> emptyRows, List<Long> emptyCols) {
+    long incr = 0;
     for (int j = 0; j < galaxies.size(); j++) {
       incr = 0;
       for (int i = 0; i < emptyRows.size(); i++) {
         if (emptyRows.get(i) < galaxies.get(j).r) incr++;
       }
-      galaxies.get(j).r += incr;
+      galaxies.get(j).r += incr * (MULT_FACTOR - 1);
     }
 
     for (int j = 0; j < galaxies.size(); j++) {
@@ -95,7 +96,7 @@ class Day11 {
         if (emptyCols.get(i) < galaxies.get(j).c) incr++;
         //System.out.println("incrementing col for galaxy " + String.valueOf(j) + " # " + galaxies.get(j));
       }
-      galaxies.get(j).c += incr;
+      galaxies.get(j).c += incr * (MULT_FACTOR - 1);
     }
   }
 
@@ -107,10 +108,10 @@ class Day11 {
 
 
 class Galaxy {
-  public int r;
-  public int c;
+  public long r;
+  public long c;
 
-  Galaxy(int a, int b) {
+  Galaxy(long a, long b) {
     r = a; c = b;
   }
 
