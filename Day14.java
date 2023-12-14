@@ -4,8 +4,11 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 class Day14 {
+  public static Map<Long, List<Long>> cycleCounts = new HashMap<>();
   public static void main(String[] args) {
     try {
       BufferedReader reader = new BufferedReader(new FileReader(args[0]));
@@ -26,8 +29,10 @@ class Day14 {
       }
       long total = 0;
 
+      List<Long> totals = new ArrayList<>();
+
       int cycles = 1000000000;
-      for (int i = 0; i < cycles; i++) {
+      for (long i = 0; i < cycles; i++) {
         tiltNorth(np); //north
         //printNorth(np);
         np = transposeRight(np);
@@ -42,10 +47,13 @@ class Day14 {
         np = transposeRight(np);
         //printPlatform(np);
         total = computeLoad(np);
-        System.out.println("cycles " + String.valueOf(i+1) + " : " + String.valueOf(total));
+        totals.add(total);
+        //System.out.println("cycles " + String.valueOf(i+1) + " : " + String.valueOf(total));
+        List<Long> cycleCount = cycleCounts.getOrDefault(total, new ArrayList<Long>());
+        cycleCount.add(i);
+        cycleCounts.put(total, cycleCount);
+        if (i > 10000 && foundPattern(totals, cycles)) break;
       }
-      System.out.println(total);
-
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -141,6 +149,79 @@ class Day14 {
   }
 
 
+  public static boolean foundPattern(List<Long> totals, long cycles) {
+    boolean found = false;
+    for (Map.Entry<Long, List<Long>> entry : cycleCounts.entrySet()) {
+      long total = entry.getKey();
+      List<Long> cycleCount = entry.getValue();
+      if (arithmeticProgression(total, cycleCount)) {
+        long[] ad = new long[2];
+        calculateAandD(totals, total, cycleCount, ad);
+        calculateCount(ad, cycles, totals);
+        found = true;
+        break;
+      }
+    }
+    return found;
+  }
 
+  public static boolean arithmeticProgression(long total, List<Long> c) {
+    if (c.size() < 20) return false;
+    //take last 10
+    boolean flag = true;
+    int n = c.size();
+    long diff = c.get(n-10) - c.get(n-11);
+    for (int i = n-10; flag && i < n; i++) {
+      flag = (c.get(i) - c.get(i-1) == diff);
+    }
+    
+    return flag;
+  }
+
+
+  public static void calculateAandD(List<Long> totals, long curr, List<Long> cycleCount, long[] ad) {
+    int n = cycleCount.size();
+    Long diff = cycleCount.get(n-1) - cycleCount.get(n-2);
+
+    Long next = cycleCount.get(n-1);
+    int i;
+    for (i = n - 2; i >= 0; i--) {
+      next -= diff;
+      if (next != cycleCount.get(i)) {
+        break;
+      }
+    }
+    i++;
+    ad[1] = diff;
+
+    Long cycleNum = cycleCount.get(i);
+    next = cycleNum - diff;
+    while (next >= 0 && ((1 * totals.get(next.intValue())) == (1 * totals.get(cycleNum.intValue())))) {
+      cycleNum = cycleNum - 1;
+      next = next - 1;
+    }
+    ad[0] = cycleNum;
+  }
+
+
+  public static void calculateCount(long[] ad, Long cycles, List<Long> totals) {
+    if (cycles < ad[0]) {
+      System.out.println("cycle not reached");
+      System.out.println(totals.get(cycles.intValue()));
+      return; 
+    }
+
+    int k;
+    for (int i = 0; i < ad[1]; i++) {
+      k = (int) ad[0] + i;
+    }
+
+    cycles -= (ad[0] + 1);
+    Long rem = cycles % ad[1];
+    System.out.println(cycles);
+    rem += ad[0];
+    System.out.println("A = " + String.valueOf(ad[0]) + ", D = " + String.valueOf(ad[1]));
+    System.out.println(totals.get(rem.intValue()));
+  }
 
 }
