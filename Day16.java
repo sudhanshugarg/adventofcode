@@ -24,6 +24,9 @@ class Day16 {
 
       int total = c.energize(floor);
       System.out.println(total);
+
+      total = c.energizeAny(floor);
+      System.out.println(total);
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -40,14 +43,22 @@ class Cave {
     int n = floor.get(0).length();
 
     boolean[][][] visited = new boolean[m][n][4];
-    for (int i = 0; i < m; i++) 
-      for (int j = 0; j < n; j++) 
-        for (int k = 0; k < 4; k++)
-          visited[i][j][k] = false;
+    resetVisited(visited, m, n);
 
     //dir: 0 = down, 1 = up, 2 = left, 3 = right
     energizeHelper(floor, 0, 0, 3, visited);
 
+    return countEnergized(visited, m, n);
+  }
+
+  public void resetVisited(boolean[][][] visited, int m, int n) {
+    for (int i = 0; i < m; i++) 
+      for (int j = 0; j < n; j++) 
+        for (int k = 0; k < 4; k++)
+          visited[i][j][k] = false;
+  }
+
+  public int countEnergized(boolean[][][] visited, int m, int n) {
     int v = 0;
     for (int i = 0; i < m; i++)
       for (int j = 0; j < n; j++) 
@@ -57,6 +68,47 @@ class Cave {
             break;
           }
     return v;
+  }
+
+  public int energizeAny(List<String> floor) {
+    int m = floor.size();
+    int n = floor.get(0).length();
+
+    boolean[][][] visited = new boolean[m][n][4];
+    int maxEnergized = -1;
+
+    //top row, r = 0
+    for (int a = 0; a < n; a++) {
+      resetVisited(visited, m, n);
+      energizeHelper(floor, 0, a, 0, visited);
+      int v = countEnergized(visited, m, n);
+      maxEnergized = maxEnergized < v ? v : maxEnergized;
+    }
+
+    //bottom row, r = m-1
+    for (int a = 0; a < n; a++) {
+      resetVisited(visited, m, n);
+      energizeHelper(floor, m-1, a, 1, visited);
+      int v = countEnergized(visited, m, n);
+      maxEnergized = maxEnergized < v ? v : maxEnergized;
+    }
+
+    //left col, c = 0
+    for (int a = 0; a < m; a++) {
+      resetVisited(visited, m, n);
+      energizeHelper(floor, a, 0, 3, visited);
+      int v = countEnergized(visited, m, n);
+      maxEnergized = maxEnergized < v ? v : maxEnergized;
+    }
+
+    //right col, c = n-1
+    for (int a = 0; a < m; a++) {
+      resetVisited(visited, m, n);
+      energizeHelper(floor, a, n-1, 2, visited);
+      int v = countEnergized(visited, m, n);
+      maxEnergized = maxEnergized < v ? v : maxEnergized;
+    }
+    return maxEnergized;
   }
 
   public void energizeHelper(List<String> floor, int r, int c, int d, boolean[][][] visited) {
