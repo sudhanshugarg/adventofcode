@@ -24,9 +24,12 @@ class Day18 {
       reader.close();
 
       CircularPath c = new CircularPath();
-      int total = 0;
-      total = c.findInterior(directions);
+      long total = 0;
+      total = c.findInterior(directions, false);
       System.out.println("part 1: " + String.valueOf(total));
+
+      total = c.findInterior(directions, true);
+      System.out.println("part 2: " + String.valueOf(total));
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -36,82 +39,65 @@ class Day18 {
 class CircularPath {
   CircularPath() {}
 
-  public int findInterior(List<String> d) {
+  public long findInterior(List<String> d, boolean isPart2) {
     int n = d.size();
 
-    Map<Integer, List<Integer>> border = new HashMap<>();
-    int R = 800;
-    int C = 400;
-    char[][] grid = new char[R][C];
-    for (int i = 0; i < R; i++)
-      for (int j = 0; j < C; j++)
-        grid[i][j] = '.';
+    Map<Long, List<Long>> border = new HashMap<>();
+    List<Long> row0 = new ArrayList<>();
+    row0.add(0L);
+    border.put(0L, row0);
+    long minr = 0, maxr = 0, minc = 0, maxc = 0;
 
-    List<Integer> row0 = new ArrayList<>();
-    row0.add(0);
-    //border.add(row0);
-    border.put(0, row0);
-    int minr = 0, maxr = 0, minc = 0, maxc = 0;
-
-    char A;
-    int steps;
-    int r = 0, c = 0, r2 = 400, c2 = 0;
-    grid[r2][c2] = '#';
-    char X = '#';
+    char A = '.';
+    long steps = 0;
+    long r = 0, c = 0;
     for (int i = 0; i < n; i++) {
       String[] s = d.get(i).split("\\s+");
-      A = s[0].charAt(0);
-      steps = Integer.parseInt(s[1]);
-      X = A;
+      if (!isPart2) {
+        A = s[0].charAt(0);
+        steps = Long.parseLong(s[1]);
+      } else {
+        A = s[2].charAt(7);
+        if (A == '0') A = 'R';
+        else if (A == '1') A = 'D';
+        else if (A == '2') A = 'L';
+        else if (A == '3') A = 'U';
+
+        steps = Long.parseLong(s[2].substring(2,7), 16);
+        System.out.println(A + "," + steps);
+      }
 
       switch (A) {
         case 'R':
         for (int j = 1; j <= steps; j++) {
           border.get(r).add(c+j);
-          grid[r2][c2+j] = X;
         }
         c += steps;
-        c2 += steps;
         maxc = maxc < c ? c : maxc;
         break;
         case 'D':
         //first update size
         int m = border.size();
-        //if ((r + steps + 1) > m) {
-        //  for (int j = m; j < r+steps+1; j++) border.add(new ArrayList<>());
-        //}
         for (int j = 1; j <= steps; j++) {
           border.putIfAbsent(r+j, new ArrayList<>());
           border.get(r+j).add(c);
-          grid[r2+j][c2] = X;
         }
         r += steps;
-        r2 += steps;
         maxr = maxr < r ? r : maxr;
         break;
         case 'L':
         for (int j = 1; j <= steps; j++) {
           border.get(r).add(c-j);
-          grid[r2][c2-j] = X;
         }
         c -= steps;
-        c2 -= steps;
         minc = minc > c ? c : minc;
         break;
         case 'U':
-        //if (steps > r) {
-        //  for (int j = r; j < steps; j++) {
-        //    border.add(0, new ArrayList<>());
-        //  }
-        //  r = steps;
-        //}
         for (int j = 1; j <= steps; j++) {
           border.putIfAbsent(r-j, new ArrayList<>());
           border.get(r-j).add(c);
-          grid[r2-j][c2] = X;
         }
         r -= steps;
-        r2 -= steps;
         minr = minr > r ? r : minr;
         break;
         default:
@@ -123,10 +109,10 @@ class CircularPath {
     System.out.println(minc);
     System.out.println(maxc);
 
-    int m = maxr - minr + 1;
+    long m = maxr - minr + 1;
     System.out.println("depth = " + String.valueOf(m));
-    int dug = 0;
-    for (int i = minr; i <= maxr; i++) {
+    long dug = 0;
+    for (long i = minr; i <= maxr; i++) {
       Collections.sort(border.get(i));
       //System.out.println(border.get(i));
     }
@@ -135,32 +121,29 @@ class CircularPath {
 
     border.put(minr-1, new ArrayList<>());
     border.put(maxr+1, new ArrayList<>());
-    for (int i = minr; i <= maxr; i++) {
-      int rowdug = shootRay(border.get(i), border.get(i-1), border.get(i+1));
-      printTrenchRow(border, i, minc, maxc);
-      System.out.print(" : ");
-      System.out.println(rowdug);
-      /*
-      try {
-        System.in.read();
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-      */
+    for (long i = minr; i <= maxr; i++) {
+      long rowdug = shootRay(border.get(i), border.get(i-1), border.get(i+1));
+      //printTrenchRow(border, i, minc, maxc);
+      //System.out.print(" : ");
+      //System.out.println(rowdug);
+      //try {
+      //  System.in.read();
+      //} catch (IOException e) {
+      //  e.printStackTrace();
+      //`}
       dug += rowdug;
     }
 
     return dug;
   }
 
-  public int shootRay(List<Integer> s, List<Integer> prev, List<Integer> next) {
+  public long shootRay(List<Long> s, List<Long> prev, List<Long> next) {
     if (s.size() == 0) return 0;
     int n = s.size();
 
     boolean in = false;
-    int dug = 0;
+    long dug = 0;
     for (int i = 0; i < n;) {
-      String istr = String.valueOf(i);
       //System.out.print(" 1. i = " + istr + ", dug = " + dug);
       if ((i > 0) && (s.get(i) == s.get(i-1))) {
         i++;
@@ -179,7 +162,7 @@ class CircularPath {
         in = !in;
       } else {
         //check ends of pipe.
-        int c1 = s.get(i), c2 = s.get(j-1);
+        long c1 = s.get(i), c2 = s.get(j-1);
         //System.out.println("looking for " + String.valueOf(c1) + " and " + String.valueOf(c2) + " in " + prev);
         //System.out.println("looking for " + String.valueOf(c1) + " and " + String.valueOf(c2) + " in " + next);
         //find c1 in i-1 and i+1
@@ -196,25 +179,24 @@ class CircularPath {
       }
       dug += len;
       i = j;
-      istr = String.valueOf(i);
       //System.out.print(" 3. i = " + istr + ", dug = " + dug);
       //System.out.println();
     }
     return dug;
   }
 
-  public void printTrench(Map<Integer, List<Integer>> border, int minr, int maxr, int minc, int maxc) {
-    for (int i = minr; i <= maxr; i++) {
+  public void printTrench(Map<Long, List<Long>> border, int minr, int maxr, int minc, int maxc) {
+    for (long i = minr; i <= maxr; i++) {
       printTrenchRow(border, i, minc, maxc);
       System.out.println();
     }
   }
 
-  public void printTrenchRow(Map<Integer, List<Integer>> border, int r, int minc, int maxc) {
+  public void printTrenchRow(Map<Long, List<Long>> border, long r, long minc, long maxc) {
     int p = 0;
     char h = '#', d = '.';
-    List<Integer> row = border.get(r);
-    for (int j = minc; j <= maxc; j++) {
+    List<Long> row = border.get(r);
+    for (long j = minc; j <= maxc; j++) {
       if (p < row.size() && (row.get(p) == j)) {
         if (r == 0 && j == 0) System.out.print('S');
         else System.out.print(h);
@@ -233,7 +215,7 @@ class CircularPath {
     }
   }
 
-  public boolean binSearch(List<Integer> arr, int target) {
+  public boolean binSearch(List<Long> arr, long target) {
     int low = 0, high = arr.size() - 1;
     int mid;
     
