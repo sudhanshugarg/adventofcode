@@ -31,20 +31,27 @@ class Day19 {
       reader.close();
 
       long total = 0;
-      total = part1(workflows, ratings);
+      Map<String, Workflow> mw = createWorkflows(workflows);
+      total = part1(mw, ratings);
       System.out.println("part 1: " + String.valueOf(total));
+
+      total = part2(mw);
+      System.out.println("part 2: " + String.valueOf(total));
     } catch (IOException e) {
       e.printStackTrace();
     }
   }
 
-  public static long part1(List<String> workflows, List<String> ratings) {
+  public static Map<String, Workflow> createWorkflows(List<String> workflows) {
     Map<String, Workflow> mw = new HashMap<>();
     for (int i = 0; i < workflows.size(); i++) {
       Workflow w = new Workflow(workflows.get(i));
       mw.put(w.getId(), w);
     }
+    return mw;
+  }
 
+  public static long part1(Map<String, Workflow> mw, List<String> ratings) {
     long ans = 0;
     Rating r;
     String nextWorkflow = "in";
@@ -59,6 +66,41 @@ class Day19 {
       if (nextWorkflow.equals("A")) ans += r.sum();
     }
     return ans;
+  }
+
+  public static long part2(Map<String, Workflow> mw) {
+    long[] total = new long[1];
+    total[0] = 0;
+
+    dfs(mw, "in", new Combo(), total);
+    return total[0];
+  }
+
+  public static void dfs(Map<String, Workflow> mw, String wid, Combo start, long[] total) {
+    if (wid.equals("A")) {
+      total[0] += start.count();
+      return;
+    } else if (wid.equals("R")) return;
+
+    //continue dfs.
+    Workflow w = mw.get(wid);
+    //System.out.println("trying out workflow with id: " + wid);
+    List<Condition> conditions = w.getConditions();
+    for (int i = 0; i < conditions.size() + 1; i++) {
+      Combo combo = new Combo(start);
+
+      //create combo opposite of previous conditions so far
+      for (int j = 0; j < i; j++) {
+        combo.updateInverseBound(conditions.get(j));
+      }
+
+      if (i != conditions.size()) {
+        combo.updateBound(conditions.get(i));
+        dfs(mw, conditions.get(i).result, combo, total);
+      } else {
+        dfs(mw, w.getLastCondition(), combo, total);
+      }
+    }
   }
 }
 
@@ -80,6 +122,13 @@ class Condition {
     }
     val = Long.parseLong(s.substring(2, colon));
     result = s.substring(colon + 1);
+  }
+
+  Condition (Condition copy) {
+    this.c = copy.c;
+    this.isLesser = copy.isLesser;
+    this.val = copy.val;
+    this.result = copy.result;
   }
 
   public String evaluate(Rating r) {
@@ -146,6 +195,14 @@ class Workflow {
   public String getId() {
     return id;
   }
+
+  public List<Condition> getConditions() {
+    return functions;
+  }
+
+  public String getLastCondition() {
+    return last;
+  }
 }
 
 class Rating {
@@ -172,5 +229,78 @@ class Rating {
 
   public long sum() {
     return x + m + a + s;
+  }
+}
+
+
+class Combo {
+  public long[] x, m, a, s;
+  Combo() {
+    x = new long[2];
+    m = new long[2];
+    a = new long[2];
+    s = new long[2];
+    x[0] = m[0] = a[0] = s[0] = 0;
+    x[1] = m[1] = a[1] = s[1] = 4001;
+  }
+
+  Combo(Combo copy) {
+    this.x = Arrays.copyOf(copy.x, copy.x.length);
+    this.m = Arrays.copyOf(copy.m, copy.m.length);
+    this.a = Arrays.copyOf(copy.a, copy.a.length);
+    this.s = Arrays.copyOf(copy.s, copy.s.length);
+  }
+
+  public void updateBound(Condition cond) {
+      switch (cond.c) {
+        case 'x':
+          if (cond.isLesser) {
+            x[1] = cond.val < x[1] ? cond.val : x[1];
+          } else {
+            x[0] = cond.val > x[0] ? cond.val : x[0];
+          }
+        break;
+        case 'm':
+          if (cond.isLesser) {
+            m[1] = cond.val < m[1] ? cond.val : m[1];
+          } else {
+            m[0] = cond.val > m[0] ? cond.val : m[0];
+          }
+        break;
+        case 'a':
+          if (cond.isLesser) {
+            a[1] = cond.val < a[1] ? cond.val : a[1];
+          } else {
+            a[0] = cond.val > a[0] ? cond.val : a[0];
+          }
+        break;
+        case 's':
+          if (cond.isLesser) {
+            s[1] = cond.val < s[1] ? cond.val : s[1];
+          } else {
+            s[0] = cond.val > s[0] ? cond.val : s[0];
+          }
+        break;
+        default:
+        System.out.println("never never never happen");
+      }
+  }
+
+  public void updateInverseBound(Condition cond) {
+    Condition inverse = new Condition(cond);
+    inverse.isLesser = !inverse.isLesser;
+    if (cond.isLesser) inverse.val--; //x < 325 --> x > 324
+    else inverse.val++; //x > 325 --> x < 326
+
+    updateBound(inverse);
+  }
+
+  public long count() {
+    if ((x[0] >= x[1]) || (m[0] >= m[1]) || (a[0] >= a[1]) || (s[0] >= s[1])) return 0;
+    long result = x[1] - (x[0] + 1);
+    result *= m[1] - (m[0] + 1);
+    result *= a[1] - (a[0] + 1);
+    result *= s[1] - (s[0] + 1);
+    return result;
   }
 }
