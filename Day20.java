@@ -12,17 +12,14 @@ import java.util.Collections;
 import java.lang.Enum;
 import java.util.Queue;
 import java.util.ArrayDeque;
+import java.util.Set;
+import java.util.HashSet;
 
 class Day20 {
-  public static void main(String[] args) {
-    try {
-      Map<String, Flipflop> mf = new HashMap<>();
-      Map<String, Conjunction> mc = new HashMap<>();
-      Broadcast b = new Broadcast();
-
-      BufferedReader reader = new BufferedReader(new FileReader(args[0]));
-      String line = reader.readLine();
-      while (line != null) {
+  public static Broadcast parseInput(List<String> input, Map<String, Flipflop> mf, Map<String, Conjunction> mc) {
+    Broadcast b = new Broadcast();
+    for (int i = 0; i < input.size(); i++) {
+      String line = input.get(i);
         switch(line.charAt(0)) {
           case 'b':
             b = new Broadcast(line);
@@ -38,20 +35,76 @@ class Day20 {
           default:
           System.out.println("should never happen");
         } 
+    }
+    return b;
+  }
+
+  public static void main(String[] args) {
+    try {
+      List<String> input = new ArrayList<>();
+
+      BufferedReader reader = new BufferedReader(new FileReader(args[0]));
+      String line = reader.readLine();
+      while (line != null) {
+        input.add(line);
         line = reader.readLine();
       }
       reader.close();
 
-      updateConjunctionInputs(mf, mc);
-      printInputs(b, mf, mc);
 
-      long total = 0;
-      total = part1(b, mf, mc, 1000);
-      System.out.println("part 1: " + String.valueOf(total));
+      {
+        Map<String, Flipflop> mf = new HashMap<>();
+        Map<String, Conjunction> mc = new HashMap<>();
+        Broadcast b = parseInput(input, mf, mc);
+        updateConjunctionInputs(mf, mc);
+
+        long total = part1(b, mf, mc, 1000);
+        System.out.println("part 1: " + String.valueOf(total));
+      }
+
+      {
+        Map<String, Flipflop> mf = new HashMap<>();
+        Map<String, Conjunction> mc = new HashMap<>();
+        Broadcast b = parseInput(input, mf, mc);
+        updateConjunctionInputs(mf, mc);
+
+        long total = part2(b, mf, mc, "xm");
+        System.out.println("part 2: " + String.valueOf(total));
+      }
 
     } catch (IOException e) {
       e.printStackTrace();
     }
+  }
+
+  public static List<String> toposort(Broadcast b, Map<String, Flipflop> mf, Map<String, Conjunction> mc) {
+    Map<String, Boolean> visited = new HashMap<>();
+    List<String> sorted = new ArrayList<>();
+
+    for (int i = 0; i < b.getModules().size(); i++) {
+      topodfs(b.getModules().get(i), mf, mc, visited, sorted);
+      if (!visited.containsKey(b.getModules().get(i)))
+        sorted.add(b.getModules().get(i));
+    }
+    Collections.reverse(sorted);
+    return sorted;
+  }
+
+  public static void topodfs(String currModule, Map<String, Flipflop> mf, Map<String, Conjunction> mc, Map<String, Boolean> v, List<String> sorted) {
+    if (v.containsKey(currModule)) return;
+
+    List<String> modules = new ArrayList<>();
+    if (mf.containsKey(currModule)) {
+      modules = mf.get(currModule).getModules();
+    } else if (mc.containsKey(currModule)) {
+      modules = mc.get(currModule).getModules();
+    }
+
+    v.put(currModule, true);
+    for (int i = 0; i < modules.size(); i++) {
+      topodfs(modules.get(i), mf, mc, v, sorted);
+    }
+    sorted.add(currModule);
   }
 
   public static void printInputs(Broadcast b, Map<String, Flipflop> mf, Map<String, Conjunction> mc) {
@@ -78,7 +131,7 @@ class Day20 {
     }
   }
 
-  public static void bfs(Broadcast b, Map<String, Flipflop> mf, Map<String, Conjunction> mc, State st) {
+  public static boolean bfs2(Broadcast b, Map<String, Flipflop> mf, Map<String, Conjunction> mc, String tofind) {
     long lows = 1, highs = 0;
     Queue<Ray> q = new ArrayDeque<>();
 
@@ -89,10 +142,12 @@ class Day20 {
 
     while(!q.isEmpty()) {
       Ray r = q.poll();
+      if (r.pulse == Pulse.HIGH && tofind.equals(r.to)) {
+        System.out.println(r);
+        return true;
+      }
       if (r.pulse == Pulse.LOW) lows++;
       else highs++;
-
-      System.out.println(r.toString());
 
       if (mf.containsKey(r.to)) {
         if (r.pulse == Pulse.HIGH) continue;
@@ -113,8 +168,42 @@ class Day20 {
       }
     }
 
-    System.out.println(lows);
-    System.out.println(highs);
+    return false;
+  }
+
+  public static void bfs(Broadcast b, Map<String, Flipflop> mf, Map<String, Conjunction> mc, State st) {
+    long lows = 1, highs = 0;
+    Queue<Ray> q = new ArrayDeque<>();
+
+    for (int i = 0; i < b.getModules().size(); i++) {
+      Ray r = new Ray("broadcaster", b.getModules().get(i), Pulse.LOW);
+      q.add(r);
+    }
+
+    while(!q.isEmpty()) {
+      Ray r = q.poll();
+      if (r.pulse == Pulse.LOW) lows++;
+      else highs++;
+
+      if (mf.containsKey(r.to)) {
+        if (r.pulse == Pulse.HIGH) continue;
+
+        Flipflop ff = mf.get(r.to);
+        Pulse nextp = ff.inputLowPulse();
+        for (int i = 0; i < ff.getModules().size(); i++) {
+          Ray nextr = new Ray(r.to, ff.getModules().get(i), nextp);
+          q.add(nextr);
+        }
+      } else if (mc.containsKey(r.to)) {
+        Conjunction c = mc.get(r.to);
+        Pulse nextp = c.inputPulse(r.from, r.pulse);
+        for (int i = 0; i < c.getModules().size(); i++) {
+          Ray nextr = new Ray(r.to, c.getModules().get(i), nextp);
+          q.add(nextr);
+        }
+      }
+    }
+
     st.lows = lows;
     st.highs = highs;
   }
@@ -158,6 +247,9 @@ class Day20 {
       State earlierState = ms.get(pattern);
       long earlierId = earlierState.getId();
       long cycleLength = end - earlierId;
+      System.out.println("Start repeat state: " + String.valueOf(earlierId));
+      System.out.println("End repeat state: " + String.valueOf(end));
+      System.out.println("cycle length: " + String.valueOf(cycleLength));
 
       long mult = (cycles - (earlierId-1)) / cycleLength;
       long remainder = (cycles - (earlierId-1)) % cycleLength;
@@ -180,6 +272,28 @@ class Day20 {
       }
     }
     return lows * highs;
+  }
+
+  public static long part2(Broadcast b, Map<String, Flipflop> mf, Map<String, Conjunction> mc, String tofind) {
+    Map<String, Flipflop> mff = new HashMap<>();
+    mff.putAll(mf);
+    Map<String, Conjunction> mcc = new HashMap<>();
+    mcc.putAll(mc);
+
+    boolean flag = false;
+    for (long i = 1; ; i++) {
+      flag = bfs2(b, mff, mcc, tofind);
+      if (flag) {
+        System.out.println("first found after cycle: " + String.valueOf(i));
+        return i;
+      }
+    }
+  }
+
+  public static List<Long> diffs(List<Long> in) {
+    List<Long> res = new ArrayList<>();
+    for (int i = 1; i < in.size(); i++) res.add(in.get(i) - in.get(i-1));
+    return res;
   }
 }
 
