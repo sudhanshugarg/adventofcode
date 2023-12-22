@@ -38,7 +38,7 @@ class Day21 {
       }
       reader.close();
       
-      long total = part1(input, start, Integer.parseInt(args[1]));
+      long total = part1b(input, start, Integer.parseInt(args[1]));
       System.out.println("part 1: " + String.valueOf(total));
 
     } catch (IOException e) {
@@ -83,6 +83,69 @@ class Day21 {
     }
     return canVisit;
   }
+
+  public static long part1b(List<String> input, Point start, int exactSteps) {
+    int m = input.size();
+    int n = input.get(0).length();
+    int[][] prev = new int[m][n];
+    int[][] curr = new int[m][n];
+
+    for (int i = 0; i < m; i++)
+      for (int j = 0; j < n; j++) {
+        prev[i][j] = curr[i][j] = 0;
+      }
+
+    prev[(int)start.r][(int)start.c] = 1;
+    int nr, nc;
+    for (int k = 0; k < exactSteps; k++) {
+
+      for (int i = 0; i < m; i++)
+        for (int j = 0; j < n; j++) {
+          //if (input.get(i).charAt(j) == '#') continue;
+          for (int d = 0; d < 4; d++) {
+            nr = i + (int)dirs[d][0];
+            nc = j + (int)dirs[d][1];
+            if (nr < 0 || nr >= m || nc < 0 || nc >= m) continue;
+
+            if (prev[nr][nc] > 0) {
+              curr[i][j] = 1;
+              break;
+            }
+          }
+        }
+
+      update(prev, curr, m, n, false);
+      update(curr, curr, m, n, true);
+    }
+
+    return printState(prev, m, n, input);
+  }
+
+  public static long printState(int[][] arr, int m, int n, List<String> input) {
+    long ans = 0;
+    long rowcount;
+    for (int i = 0; i < m; i++) {
+      rowcount = 0;
+      for (int j = 0; j < n; j++) {
+        if (input.get(i).charAt(j) == '#') System.out.print('#');
+        else System.out.print(arr[i][j]);
+        if (arr[i][j] > 0) rowcount ++;
+      }
+      ans += rowcount;
+      System.out.println(" " + String.valueOf(rowcount));
+    }
+    System.out.println();
+    return ans;
+  }
+
+  public static void update(int[][] to, int[][] from, int m, int n, boolean setToZero) {
+    for (int i = 0; i < m; i++)
+      for (int j = 0; j < n; j++) {
+        if (setToZero) to[i][j] = 0;
+        else to[i][j] = from[i][j];
+      }
+  }
+
 }
 
 class Point {
