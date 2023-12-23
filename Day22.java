@@ -16,11 +16,8 @@ import java.util.Set;
 import java.util.HashSet;
 
 class Day22 {
-  //down, left, up, right 
-  public static long[][] dirs = {{-1L, 0L}, {0L, -1L}, {1L, 0L}, {0L, 1L}};
   public static void main(String[] args) {
     try {
-
       BufferedReader reader = new BufferedReader(new FileReader(args[0]));
       String line = reader.readLine();
       int id = 0;
@@ -34,11 +31,35 @@ class Day22 {
       }
       reader.close();
 
+
       Collections.sort(bricks);
+      //printB(bricks, 10);
+      //printOverlap(bricks, 10);
+      //printPosn(bricks, 10);
       int total = part1(bricks);
+      //printPosn(bricks, 10);
       System.out.println("part 1: " + String.valueOf(total));
     } catch (IOException e) {
       e.printStackTrace();
+    }
+  }
+
+  public static void printOverlap(List<Brick> bricks, int limit) {
+    int n = bricks.size();
+    n = n > limit ? limit : n;
+
+    for (int i = 0; i < n; i++) {
+      System.out.print(bricks.get(i).label + ":");
+    for (int j = 0; j < n; j++) {
+      if (i == j) {
+        System.out.print("S");
+        continue;
+      }
+      if (bricks.get(i).overlap(bricks.get(j))) 
+        System.out.print("1");
+      else System.out.print("0");
+    }
+    System.out.println();
     }
   }
 
@@ -46,6 +67,9 @@ class Day22 {
     //bricks are sorted by lower z.
     int n = bricks.size();
     int g[][] = new int[n][n];
+    for (int i = 0; i < n; i++)
+      for (int j = 0; j < n; j++)
+        g[i][j] = 0;
 
     //g is a directed graph
     //g[i][j] = 1 means brick i depends on brick j
@@ -54,6 +78,7 @@ class Day22 {
     int z0 = 0;
     for (int i = 0; i < n; i++) {
       bi = bricks.get(i);
+      z0 = 0;
       for (int j = 0; j < i; j++) {
         //checking if brick i overlaps with potentially lower brick j
         bj = bricks.get(j);
@@ -71,11 +96,12 @@ class Day22 {
       bi.z[1] = z0 + zdist;
     }
 
+    Collections.sort(bricks);
     for (int i = 1; i < n; i++) {
       bi = bricks.get(i);
       for (int j = 0; j < i; j++) {
         bj = bricks.get(j);
-        if (bj.z[1] == bi.z[0]) {
+        if (bj.z[1] == bi.z[0] && bi.overlap(bj)) {
           g[bi.id][bj.id] = 1; //i depends on j
         }
       }
@@ -110,6 +136,71 @@ class Day22 {
 
     return n - cannotDestroy.size();
   }
+
+  public static void printB(List<Brick> bricks, int limit) {
+    for (int i = 0; i < bricks.size() && i < limit; i++) {
+      //System.out.println(String.valueOf(bricks.get(i).id + " " + bricks.get(i).in));
+      System.out.print(bricks.get(i).label + ":");
+      System.out.print(String.valueOf(bricks.get(i).x[0] + 1) + "," + String.valueOf(bricks.get(i).y[0] + 1) + "," + String.valueOf(bricks.get(i).z[0] + 1));
+      System.out.println("~" + String.valueOf(bricks.get(i).x[1]) + "," + String.valueOf(bricks.get(i).y[1]) + "," + String.valueOf(bricks.get(i).z[1]));
+    }
+  }
+
+  public static void printPosn(List<Brick> bricks, int limit) {
+    long[] x = new long[2];
+    long[] y = new long[2];
+    long[] z = new long[2];
+
+    Brick b = bricks.get(0);
+    x[0] = b.x[0]+1; x[1] = b.x[1];
+    y[0] = b.y[0]+1; y[1] = b.y[1];
+    z[0] = b.z[0]+1; z[1] = b.z[1];
+    for (int i = 1; i < bricks.size() && i < limit; i++) {
+      b = bricks.get(i);
+      x[0] = x[0] > (b.x[0]+1) ? b.x[0]+1 : x[0];
+      y[0] = y[0] > b.y[0]+1 ? b.y[0]+1 : y[0];
+      z[0] = z[0] > b.z[0]+1 ? b.z[0]+1 : z[0];
+
+      x[1] = x[1] < b.x[1] ? b.x[1] : x[1];
+      y[1] = y[1] < b.y[1] ? b.y[1] : y[1];
+      z[1] = z[1] < b.z[1] ? b.z[1] : z[1];
+    }
+
+    System.out.println("z vs x");
+    printFalling(z, x, bricks, limit, true);
+    System.out.println();
+    System.out.println();
+    System.out.println("z vs y");
+    printFalling(z, y, bricks, limit, false);
+    System.out.println();
+    System.out.println();
+  }
+
+  public static void printFalling(long[] z, long[] m, List<Brick> bricks, int limit, boolean isX) {
+    boolean flag = false;
+    long[] w = new long[2];
+    for (long i = z[1]; i >= z[0]; i--) {
+    for (long j = m[0]; j <= m[1]; j++) {
+      flag = false;
+      for (int k = 0; k < bricks.size() && k < limit; k++) {
+        Brick b = bricks.get(k);
+        w = b.x;
+        if (!isX) w = b.y;
+        if ((i >= (b.z[0]+1) && i <= b.z[1]) && (j >= (w[0]+1) && j <= w[1])) {
+          System.out.print(b.label);
+          flag = true;
+          break;
+        }
+      }
+      if (!flag) System.out.print('.');
+    }
+    System.out.println(" " + String.valueOf(i));
+    }
+  }
+
+  public static String getStr(long[] arr) {
+    return String.valueOf(arr[0]) + "," + String.valueOf(arr[1]);
+  }
 }
 
 class Brick implements Comparable<Brick> {
@@ -117,10 +208,13 @@ class Brick implements Comparable<Brick> {
   public long[] y;
   public long[] z;
   public int id;
+  public char label;
+  public String in;
 
   Brick() {}
   Brick(int identity, String input) {
     int tilde = 0;
+    in = input;
     for (int i = 0; i < input.length(); i++) {
       if (input.charAt(i) == '~') {
         tilde = i;
@@ -132,12 +226,20 @@ class Brick implements Comparable<Brick> {
     String[] right = input.substring(tilde+1).split(",");
 
     id = identity;
+    label = 'A';
+    label += id;
     x = new long[2];
     y = new long[2];
     z = new long[2];
-    x[0] = Long.parseLong(left[0]) - 1; x[1] = Long.parseLong(right[0]);
-    y[0] = Long.parseLong(left[1]) - 1; y[1] = Long.parseLong(right[1]);
-    z[0] = Long.parseLong(left[2]) - 1; z[1] = Long.parseLong(right[2]);
+    x[0] = Long.parseLong(left[0]); x[1] = Long.parseLong(right[0]);
+    y[0] = Long.parseLong(left[1]); y[1] = Long.parseLong(right[1]);
+    z[0] = Long.parseLong(left[2]); z[1] = Long.parseLong(right[2]);
+    long l = x[0] + y[0] + z[0];
+    long r = x[1] + y[1] + z[1];
+    if (l > r) {
+      System.out.println("eeennnhhh: something is off: " + input);
+    }
+    x[0]--; y[0]--; z[0]--;
   }
 
   public boolean overlap(Brick other) {
@@ -152,7 +254,9 @@ class Brick implements Comparable<Brick> {
   public int compareTo(Brick other) {
     if (z[0] < other.z[0]) return -1;
     else if (z[0] == other.z[0]) {
-      return z[1] <= other.z[1] ? -1 : 1;
+      if (z[1] < other.z[1]) return -1;
+      else if (z[1] == other.z[1]) return 0;
+      else return 1;
     }
     return 1;
   }
