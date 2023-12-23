@@ -31,17 +31,64 @@ class Day22 {
       }
       reader.close();
 
-
       Collections.sort(bricks);
-      //printB(bricks, 10);
-      //printOverlap(bricks, 10);
-      //printPosn(bricks, 10);
-      int total = part1(bricks);
-      //printPosn(bricks, 10);
+      int n = bricks.size();
+      //g is a directed graph
+      //g[i][j] = 1 means brick i depends on brick j
+      int g[][] = new int[n][n];
+      for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+          g[i][j] = 0;
+
+      int total = part1(bricks, g);
       System.out.println("part 1: " + String.valueOf(total));
+
+      total = part2(g, n);
+      System.out.println("part 2: " + String.valueOf(total));
     } catch (IOException e) {
       e.printStackTrace();
     }
+  }
+
+  public static int part2(int[][] g, int n) {
+    boolean[] disintegrated = new boolean[n];
+
+    Queue<Integer> q = new ArrayDeque<>();
+    int total = 0;
+    int count = 0;
+    boolean willFall = false;
+
+    for (int b = 0; b < n; b++) {
+      q.clear();
+      for (int i = 0; i < n; i++) disintegrated[i] = false;
+      q.add(b); //disintegrating b. lets make the dominoes fall.
+
+      while(!q.isEmpty()) {
+        int next = q.poll();
+        disintegrated[next] = true;
+
+        //now, go through all the bricks that depend on this
+        for (int i = 0; i < n; i++) {
+          if (g[i][next] == 0) continue;
+
+          //check if everything i depends on is disintegrated.
+          //if so, add it to the queue.
+          willFall = true;
+          for (int j = 0; willFall && j < n; j++) {
+            if (g[i][j] == 1 && !disintegrated[j]) willFall = false;
+          }
+          if (willFall) q.add(i);
+        }
+      }
+
+      count = -1;
+      for (int i = 0; i < n; i++)
+        if (disintegrated[i]) count++;
+
+      //System.out.println("for brick: " + String.valueOf(b) + ", count = " + String.valueOf(count));
+      total += count;
+    }
+    return total;
   }
 
   public static void printOverlap(List<Brick> bricks, int limit) {
@@ -63,16 +110,9 @@ class Day22 {
     }
   }
 
-  public static int part1(List<Brick> bricks) {
+  public static int part1(List<Brick> bricks, int[][] g) {
     //bricks are sorted by lower z.
     int n = bricks.size();
-    int g[][] = new int[n][n];
-    for (int i = 0; i < n; i++)
-      for (int j = 0; j < n; j++)
-        g[i][j] = 0;
-
-    //g is a directed graph
-    //g[i][j] = 1 means brick i depends on brick j
 
     Brick bi, bj;
     int z0 = 0;
@@ -139,7 +179,6 @@ class Day22 {
 
   public static void printB(List<Brick> bricks, int limit) {
     for (int i = 0; i < bricks.size() && i < limit; i++) {
-      //System.out.println(String.valueOf(bricks.get(i).id + " " + bricks.get(i).in));
       System.out.print(bricks.get(i).label + ":");
       System.out.print(String.valueOf(bricks.get(i).x[0] + 1) + "," + String.valueOf(bricks.get(i).y[0] + 1) + "," + String.valueOf(bricks.get(i).z[0] + 1));
       System.out.println("~" + String.valueOf(bricks.get(i).x[1]) + "," + String.valueOf(bricks.get(i).y[1]) + "," + String.valueOf(bricks.get(i).z[1]));
