@@ -15,7 +15,7 @@ import java.util.ArrayDeque;
 import java.util.Set;
 import java.util.HashSet;
 
-//run with java -Xss12040k Day23 23_sample 
+//run with java -Xss12040k Day23 23_sample
 class Day23 {
   public static int[][] dirs = {{1, 0}, {0, -1}, {-1, 0}, {0, 1}}; //down, left, up, right
   public static char[] dirStr = {'D', 'L', 'U', 'R'};
@@ -73,7 +73,7 @@ class Day23 {
         break;
       }
     }
-    
+
     if(!isPart1) {
       dfs2(hikingmap, longestpath, tempVisited, ends, 0, ends[0], 0);
       return longestpath[m-1][ends[1]];
@@ -93,7 +93,7 @@ class Day23 {
     return longestpath[0][ends[0]] - 1;
   }
 
-  public static void dfs(List<String> hikingmap, int[][] longestpath, boolean[][] tempVisited, boolean[][][] permVisited, 
+  public static void dfs(List<String> hikingmap, int[][] longestpath, boolean[][] tempVisited, boolean[][][] permVisited,
                          int[] ends, int r, int c, char[][] trail, boolean isPart1, int directionFrom) {
     int m = hikingmap.size();
     int n = hikingmap.get(0).length();
