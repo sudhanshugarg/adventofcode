@@ -54,14 +54,23 @@ class Day24 {
       int total = part1(hs, low, high);
       System.out.println("part 1: " + String.valueOf(total));
       //part2Test();
+      List<Hailstone> subhs;
+      subhs = new ArrayList<>();
+      //subhs = hs;
+      subset(subhs, hs, 5);
 
-      //part2ls(hs, totalVariables, Integer.parseInt(args[1]), new BigDecimal(args[2]), new BigDecimal(args[3]), Double.parseDouble(args[4]));
+      //part2(hs, totalVariables, Integer.parseInt(args[1]), new BigDecimal(args[2]), new BigDecimal(args[3]), Double.parseDouble(args[4]));
       BigDecimal initv = new BigDecimal("10");
       long p2 = part2ls(hs, totalVariables, Integer.parseInt(args[1]), new BigDecimal(args[2]), new BigDecimal(args[3]), Double.parseDouble(args[4]));
-      //System.out.println("part 2: " + String.valueOf(p2));
+      System.out.println("part 2: " + String.valueOf(p2));
     } catch (IOException e) {
       e.printStackTrace();
     }
+  }
+
+  public static void subset(List<Hailstone> subhs, List<Hailstone> hs, int len) {
+    subhs.clear();
+    for (int i = 0; i < len && i < hs.size(); i++) subhs.add(hs.get(i));
   }
 
   public static void populateEquationsAll(SystemOfEquations soe, List<Hailstone> hs, boolean isJacobian) {
@@ -118,6 +127,17 @@ class Day24 {
         System.out.println(inverse);
   }
 
+  public static void initialize2(BigDecimal initpos, BigDecimal initvelocity, List<BigDecimal> x0, List<Hailstone> hs) {
+    //initialize x,y,z
+    x0.add(initpos);
+    x0.add(initpos);
+    x0.add(initpos);
+    //initialize vx,vy,vz
+    x0.add(initvelocity);
+    x0.add(initvelocity);
+    x0.add(initvelocity);
+  }
+
   public static void initialize(List<BigDecimal> prev, List<Hailstone> hs) {
       BigDecimal x = BigDecimal.ZERO;
       BigDecimal y = BigDecimal.ZERO;
@@ -146,9 +166,10 @@ class Day24 {
 
   }
 
-  public static RealVector buildInitialVector(List<Hailstone> hs) {
+  public static RealVector buildInitialVector(List<Hailstone> hs, BigDecimal initpos, BigDecimal initvelocity) {
     List<BigDecimal> init = new ArrayList<>();
-    initialize(init, hs);
+    //initialize(init, hs);
+    initialize2(initpos, initvelocity, init, hs);
 
     double[] initval = new double[init.size() + hs.size()];
     for (int i = 0; i < init.size(); i++) initval[i] = init.get(i).doubleValue();
@@ -183,25 +204,28 @@ class Day24 {
     );
     */
 
-    final RealVector start = buildInitialVector(hs);
+    final RealVector start = buildInitialVector(hs, initpos, initvelocity);
     final RealVector observed = buildObservedVector(hs);
     System.out.println(observed);
-    int maxEvaluations = 1000;
-    int maxIterations = 1000;
+    int maxEvaluations = maxIter * 1000;
     LeastSquaresProblem lsp = LeastSquaresFactory.create(
       new HailstoneJacobian(hs),
       observed, //actual values seen, like 19, 20 etc.
       start, //initial guess, x0
       buildChecker(), //todo
-      maxEvaluations, //100000
-      maxIterations //100
+      maxEvaluations, //1000
+      maxIter //100
     );
 
-    LevenbergMarquardtOptimizer optimizer = new LevenbergMarquardtOptimizer(100.0, 1e-10, 1e-10, 1e-10, 1e-100);
+    double eps = lambda;
+    LevenbergMarquardtOptimizer optimizer = new LevenbergMarquardtOptimizer(100.0, eps, eps, eps, 1e-100);
     final LeastSquaresOptimizer.Optimum result = optimizer.optimize(lsp);
     RealVector ans = result.getPoint();
     System.out.println(ans);
-    return -2L;
+    String info = "Evals = " + String.valueOf(result.getEvaluations()) + ", Iters = " + String.valueOf(result.getIterations());
+    System.out.println(info);
+    long ans2 = Math.round(ans.getEntry(0)) + Math.round(ans.getEntry(1)) + Math.round(ans.getEntry(2));
+    return ans2;
   }
 
   public static long part2(List<Hailstone> hs, int totalVariables, int maxIter, BigDecimal initpos, BigDecimal initvelocity, double lambda) {
@@ -377,23 +401,26 @@ class Hailstone {
     Term xt = new Term(Arrays.asList(0), BigDecimal.ONE, 0);
     Term at = new Term(Arrays.asList(3, id), BigDecimal.ONE, 3);
     Term xts = new Term(Arrays.asList(id), vx.negate(), id);
-    Term xc = new Term(Arrays.asList(), px.negate(), totalVariables);
     equations3Value.add(px);
-    Equation xeq = new Equation(Arrays.asList(xt, at, xts, xc));
+    //Term xc = new Term(Arrays.asList(), px.negate(), totalVariables);
+    //Equation xeq = new Equation(Arrays.asList(xt, at, xts, xc));
+    Equation xeq = new Equation(Arrays.asList(xt, at, xts));
 
     Term yt = new Term(Arrays.asList(1), BigDecimal.ONE, 1);
     Term bt = new Term(Arrays.asList(4, id), BigDecimal.ONE, 4);
     Term yts = new Term(Arrays.asList(id), vy.negate(), id);
-    Term yc = new Term(Arrays.asList(), py.negate(), totalVariables);
     equations3Value.add(py);
-    Equation yeq = new Equation(Arrays.asList(yt, bt, yts, yc));
+    //Term yc = new Term(Arrays.asList(), py.negate(), totalVariables);
+    //Equation yeq = new Equation(Arrays.asList(yt, bt, yts, yc));
+    Equation yeq = new Equation(Arrays.asList(yt, bt, yts));
 
     Term zt = new Term(Arrays.asList(2), BigDecimal.ONE, 2);
     Term ct = new Term(Arrays.asList(5, id), BigDecimal.ONE, 5);
     Term zts = new Term(Arrays.asList(id), vz.negate(), id);
-    Term zc = new Term(Arrays.asList(), pz.negate(), totalVariables);
     equations3Value.add(pz);
-    Equation zeq = new Equation(Arrays.asList(zt, ct, zts, zc));
+    //Term zc = new Term(Arrays.asList(), pz.negate(), totalVariables);
+    //Equation zeq = new Equation(Arrays.asList(zt, ct, zts, zc));
+    Equation zeq = new Equation(Arrays.asList(zt, ct, zts));
 
     equations3 = Arrays.asList(xeq, yeq, zeq);
 
@@ -601,10 +628,8 @@ class HailstoneJacobian implements MultivariateJacobianFunction {
     double[][] jacobi = jacobian.eval2(x0); //mxn matrix 15 x 11
 
     RealMatrix F_eval_m = MatrixUtils.createRealMatrix(F_eval);
-    RealVector val = F_eval_m.getRowVector(0);
+    RealVector val = F_eval_m.getColumnVector(0);
     RealMatrix j = MatrixUtils.createRealMatrix(jacobi);
     return new Pair(val, j);
-    //System.out.println(getDim(F_eval_m));
-    //System.out.println(F_eval_m);
   }
 }
