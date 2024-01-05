@@ -19,6 +19,12 @@ import java.math.RoundingMode;
 import javafx.util.Pair;
 
 //javac -classpath ".:/Users/sugarg/coding/adventofcode/apache-commons/commons-math-4.0-beta1/commons-math4-legacy-4.0-beta1.jar:" Day24.java
+//154=815
+//913=477
+//432
+//434
+//part 1: 571753
+
 class Day25 {
 
   public static void main(String[] args) {
@@ -36,11 +42,29 @@ class Day25 {
       List<Pair<Integer, Integer>> allEdges = new ArrayList<>();
       boolean[][] g = parseGraph(input, allEdges);
 
-      long p1 = part1(g, allEdges);
-      System.out.println("part 1: " + String.valueOf(p1));
+      evaluateBridge();
+
+      //long p1 = part1b(g, allEdges);
+      //System.out.println("part 1: " + String.valueOf(p1));
     } catch (IOException e) {
       e.printStackTrace();
     }
+  }
+
+  public static void evaluateBridge() {
+    boolean[][] g = new boolean[6][6];
+    g[0][1] = g[1][0] = true;
+    g[0][2] = g[2][0] = true;
+    g[1][2] = g[2][1] = true;
+    g[2][3] = g[3][2] = true;
+    g[3][4] = g[4][3] = true;
+    g[3][5] = g[5][3] = true;
+    g[4][5] = g[5][4] = true;
+    //g[0][5] = g[5][0] = true;
+    int[] edge = new int[2];
+    edge[0] = edge[1] = -2;
+    boolean result = findBridge(g, edge);
+    System.out.println(String.valueOf(result) + ":" + String.valueOf(edge[0]) + "," + String.valueOf(edge[1]));
   }
 
   public static boolean[][] parseGraph(List<String> input, List<Pair<Integer, Integer>> allEdges) {
@@ -99,6 +123,49 @@ class Day25 {
     g[edge.getKey()][edge.getValue()] = g[edge.getValue()][edge.getKey()] = val;
   }
 
+  public static long part1b(boolean[][] g, List<Pair<Integer, Integer>> allEdges) {
+    int[] edge = new int[2];
+    edge[0] = edge[1] = -1;
+
+    int n = g.length;
+    int e = allEdges.size();
+    long[] count = new long[2];
+
+    boolean[] visited = new boolean[n];
+    for (int i = 0; i < e; i++)
+    for (int j = i+1; j < e; j++) {
+
+      setEdges(g, allEdges.get(i), false);
+      setEdges(g, allEdges.get(j), false);
+      boolean hasBridge = findBridge(g, edge);
+      if (hasBridge) {
+        System.out.println(allEdges.get(i));
+        System.out.println(allEdges.get(j));
+        System.out.println(edge[0]);
+        System.out.println(edge[1]);
+        g[edge[0]][edge[1]] = g[edge[1]][edge[0]] = false;
+        dfsCount(g, count);
+        return count[0] * count[1];
+      }
+
+      setEdges(g, allEdges.get(i), true);
+      setEdges(g, allEdges.get(j), true);
+    }
+    return -1L;
+  }
+
+  public static void dfsCount(boolean[][] g, long[] count) {
+    count[0] = count[1] = 0;
+    int n = g.length;
+    boolean[] visited = new boolean[n];
+    for (int i = 0; i < n; i++) visited[i] = false;
+
+    dfsHelper(g, visited, 0);
+    for (int i = 0; i < n; i++) if (visited[i]) count[0]++;
+
+    count[1] = n - count[0];
+  }
+
   public static long part1(boolean[][] g, List<Pair<Integer, Integer>> allEdges) {
     int n = g.length;
     int e = allEdges.size();
@@ -114,7 +181,7 @@ class Day25 {
       setEdges(g, allEdges.get(j), false);
       setEdges(g, allEdges.get(k), false);
 
-      if (dfs(g, visited, i, j, k, count)) {
+      if (dfs(g, visited, count)) {
         System.out.println(allEdges.get(i));
         System.out.println(allEdges.get(j));
         System.out.println(allEdges.get(k));
@@ -139,7 +206,7 @@ class Day25 {
     return -1;
   }
 
-  public static boolean dfs(boolean[][] g, boolean[] visited, int a, int b, int c, long[] count) {
+  public static boolean dfs(boolean[][] g, boolean[] visited, long[] count) {
     int n = g.length;
     count[0] = count[1] = 0;
 
@@ -165,5 +232,59 @@ class Day25 {
     for (int i = 0; i < n; i++) {
       if (g[curr][i]) dfsHelper(g, visited, i);
     }
+  }
+
+  public static boolean findBridge(boolean[][] g, int[] edge) {
+    int n = g.length;
+    //keep two arrays of size n
+    int[] pos = new int[n];
+    int[] lowest = new int[n];
+
+    for (int i = 0; i < n; i++) {
+      lowest[i] = -1;
+      pos[i] = -1;
+    }
+
+    int[] latest = new int[1];
+    latest[0] = 1;
+
+    //algorithm is, start dfs
+    //if a vertex is unvisited, give it the next number in the list
+    //2 cases
+    //1. edge is untraversed
+    //2. edge is a back edge
+    //if edge is back edge, then take
+    return dfsBridge(g, pos, lowest, 0, -1, latest, edge);
+  }
+
+  public static boolean dfsBridge(boolean[][] g, int[] pos, int[] lowest, int curr, int prev, int[] latest, int[] edge) {
+    System.out.println("from " + String.valueOf(prev) + " to " + String.valueOf(curr));
+    if (pos[curr] > 0) return false;
+
+    lowest[curr] = pos[curr] = latest[0];
+    latest[0]++;
+
+    System.out.println(String.valueOf(curr) + " at the start, set to " + String.valueOf(pos[curr]));
+    int n = g.length;
+    boolean result = false;
+    for (int i = 0; i < n; i++) {
+      if (i == prev) continue;
+      if (!g[curr][i]) continue;
+
+      result = dfsBridge(g, pos, lowest, i, curr, latest, edge);
+      if (result) return true;
+
+      System.out.println("false from " + String.valueOf(curr) + " to " + String.valueOf(i));
+      lowest[curr] = lowest[curr] > lowest[i] ? lowest[i] : lowest[curr];
+      //returned from downstream
+      if (lowest[i] > pos[curr]) {
+        edge[0] = curr;
+        edge[1] = i;
+        return true;
+      }
+    }
+
+    System.out.println(String.valueOf(curr) + " at the end: lowest = " + String.valueOf(lowest[curr]));
+    return false;
   }
 }
