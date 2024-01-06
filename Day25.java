@@ -42,13 +42,112 @@ class Day25 {
       List<Pair<Integer, Integer>> allEdges = new ArrayList<>();
       boolean[][] g = parseGraph(input, allEdges);
 
-      evaluateBridge();
+      //evaluateBridge();
 
-      //long p1 = part1b(g, allEdges);
-      //System.out.println("part 1: " + String.valueOf(p1));
+      long p1 = part1c(g);
+      System.out.println("part 1: " + String.valueOf(p1));
     } catch (IOException e) {
       e.printStackTrace();
     }
+  }
+
+  public static long part1c(boolean[][] g) {
+    int n = g.length;
+    boolean[][] residual = new boolean[n][n];
+
+    int source = 2;
+    for (int i = 0; i < n; i++) {
+      if (i == source) continue;
+      //System.out.println("trying target: " + String.valueOf(i));
+
+      boolean found = fordFulkerson(g, source, i, residual);
+      if (found) {
+        System.out.println("source = " + String.valueOf(source) + ", target = " + String.valueOf(i));
+        //lets find the number of elements reachable from source in the residual
+        long[] count = new long[2];
+        dfsCount(residual, count, source);
+        System.out.println("Components have: " + String.valueOf(count[0]) + ", " + String.valueOf(count[1]));
+        return count[0] * count[1];
+      }
+    }
+    return -1L;
+  }
+
+  public static boolean fordFulkerson(boolean[][] g, int s, int t, boolean[][] residual) {
+    //given start and end nodes
+    //System.out.println("Starting ford fulkerson");
+    int n = g.length;
+    int[] path = new int[n];
+    int[] pathlen = new int[1];
+
+    for (int i = 0; i < n; i++)
+      for (int j = 0; j < n; j++)
+        residual[i][j] = g[i][j];
+
+    boolean[] foundPath = new boolean[4];
+    for (int i = 0; i < 4; i++) {
+      //dfs from s to t
+      //if there is a path, mark it
+      //continue finding paths using dfs
+      //if number of edge disjoint paths == 3
+      //then we are good
+      //return true
+      //also return residual
+      //using residual graph, find the number of nodes connected to s
+      //and remaining nodes are connected to t
+      //so find the count
+      pathlen[0] = 0;
+      foundPath[i] = dfsFordFulkerson(residual, s, t, path, pathlen);
+      if (!foundPath[i] && i < 3) {
+        System.out.println("could not find path");
+        return false;
+      }
+
+      if (foundPath[i]) {
+        //lets set all these edges to false
+        for (int j = 0; j < pathlen[0] - 1; j++) {
+          //System.out.print(path[j]);
+          //System.out.print(",");
+          residual[path[j]][path[j+1]] = false;
+        }
+        //System.out.println(path[pathlen[0]-1]);
+      }
+    }
+
+    return foundPath[0] && foundPath[1] && foundPath[2] && !foundPath[3];
+  }
+
+  public static boolean dfsFordFulkerson(boolean[][] g, int s, int t, int[] path, int[] pathlen) {
+    //System.out.println("Starting dfsFordFulkerson");
+    int n = g.length;
+    boolean[] visited = new boolean[n];
+    for (int i = 0; i < n; i++) visited[i] = false;
+
+    return bfsFordHelper(g, s, t, path, pathlen, visited);
+  }
+
+  public static boolean bfsFordHelper(boolean[][] g, int curr, int target, int[] path, int[] pathlen, boolean[] visited) {
+    //System.out.println("Starting dfsFordHelper");
+    if (visited[curr]) return false;
+
+    int n = g.length;
+    visited[curr] = true;
+
+    path[pathlen[0]] = curr;
+    pathlen[0]++;
+
+    if (curr == target) return true;
+    boolean result = false;
+
+    for (int i = 0; i < n; i++) {
+      if (!g[curr][i]) continue;
+
+      result = bfsFordHelper(g, i, target, path, pathlen, visited);
+      if (result) return true;
+    }
+    pathlen[0]--;
+    //visited[curr] = false;
+    return false;
   }
 
   public static void evaluateBridge() {
@@ -113,9 +212,9 @@ class Day25 {
     }
     System.out.println(n);
     System.out.println(e);
-    System.out.println(m);
-    System.out.println(inputM);
-    System.out.println(allEdges);
+    //System.out.println(m);
+    //System.out.println(inputM);
+    //System.out.println(allEdges);
     return g;
   }
 
@@ -144,7 +243,7 @@ class Day25 {
         System.out.println(edge[0]);
         System.out.println(edge[1]);
         g[edge[0]][edge[1]] = g[edge[1]][edge[0]] = false;
-        dfsCount(g, count);
+        dfsCount(g, count, 0);
         return count[0] * count[1];
       }
 
@@ -154,13 +253,13 @@ class Day25 {
     return -1L;
   }
 
-  public static void dfsCount(boolean[][] g, long[] count) {
+  public static void dfsCount(boolean[][] g, long[] count, int start) {
     count[0] = count[1] = 0;
     int n = g.length;
     boolean[] visited = new boolean[n];
     for (int i = 0; i < n; i++) visited[i] = false;
 
-    dfsHelper(g, visited, 0);
+    dfsHelper(g, visited, start);
     for (int i = 0; i < n; i++) if (visited[i]) count[0]++;
 
     count[1] = n - count[0];
