@@ -39,10 +39,10 @@ class Day24 {
       }
       reader.close();
 
-      int totalVariables = input.size() + 6;
+      int totalVariables = input.size() + 3;
       List<Hailstone> hs = new ArrayList<>(input.size());
       for (int i = 0; i < input.size(); i++) {
-        Hailstone h = new Hailstone(input.get(i), i + 6, totalVariables);
+        Hailstone h = new Hailstone(input.get(i), i, input.size());
         hs.add(h);
         //System.out.println(h);
       }
@@ -54,23 +54,28 @@ class Day24 {
       int total = part1(hs, low, high);
       System.out.println("part 1: " + String.valueOf(total));
       //part2Test();
-      List<Hailstone> subhs;
-      subhs = new ArrayList<>();
-      //subhs = hs;
-      subset(subhs, hs, 5);
 
-      //part2(hs, totalVariables, Integer.parseInt(args[1]), new BigDecimal(args[2]), new BigDecimal(args[3]), Double.parseDouble(args[4]));
-      BigDecimal initv = new BigDecimal("10");
-      long p2 = part2ls(hs, totalVariables, Integer.parseInt(args[1]), new BigDecimal(args[2]), new BigDecimal(args[3]), Double.parseDouble(args[4]));
-      System.out.println("part 2: " + String.valueOf(p2));
+      List<BigDecimal> velocities = new ArrayList<>();
+      int vlow = -1000, vhigh = 1000;
+      for (int xi = vlow; xi <= vhigh; xi++)
+      for (int xj = vlow; xj <= vhigh; xj++)
+      for (int xk = vlow; xk <= vhigh; xk++) {
+        List<BigDecimal> velo = new ArrayList<>();
+        velo.add(new BigDecimal(xi));
+        velo.add(new BigDecimal(xj));
+        velo.add(new BigDecimal(xk));
+
+        Long p2 = part2(hs, totalVariables, velo);
+        if (p2 != null) {
+          System.out.println(velo);
+          System.out.println("part 2: " + String.valueOf(p2));
+          xi = xj = xk = vhigh + 1;
+        }
+      }
+      //long p2 = part2ls(hs, totalVariables, Integer.parseInt(args[1]), new BigDecimal(args[2]), new BigDecimal(args[3]), Double.parseDouble(args[4]));
     } catch (IOException e) {
       e.printStackTrace();
     }
-  }
-
-  public static void subset(List<Hailstone> subhs, List<Hailstone> hs, int len) {
-    subhs.clear();
-    for (int i = 0; i < len && i < hs.size(); i++) subhs.add(hs.get(i));
   }
 
   public static void populateEquationsAll(SystemOfEquations soe, List<Hailstone> hs, boolean isJacobian) {
@@ -79,8 +84,7 @@ class Day24 {
         soe.equations.addAll(hs.get(i).jacobians3);
       }
       else {
-        soe.equations.addAll(hs.get(i).equations3);
-        soe.equationsValue.addAll(hs.get(i).equations3Value);
+        soe.equations.addAll(hs.get(i).linearEquations3);
       }
     }
   }
@@ -89,22 +93,6 @@ class Day24 {
     double[][] id = new double[n][n];
     for (int i = 0; i < n; i++) id[i][i] = 1.0;
     return MatrixUtils.createRealMatrix(id);
-  }
-
-  public static void populateEquations(SystemOfEquations soe, List<Hailstone> hs, int totalVariables, boolean isJacobian) {
-    int p = 0;
-    for (int i = 0; i < hs.size(); i++) {
-      if ((i+1) * 3 > totalVariables) {
-        p = i;
-        break;
-      }
-      if (isJacobian) soe.equations.addAll(hs.get(i).jacobians3);
-      else soe.equations.addAll(hs.get(i).equations3);
-    }
-    int left = totalVariables - p*3;
-    for (int i = 0; i < left; i++)
-      if (isJacobian) soe.equations.add(hs.get(p).jacobians3.get(i));
-      else soe.equations.add(hs.get(p).equations3.get(i));
   }
 
   public static void part2Test() {
@@ -127,7 +115,7 @@ class Day24 {
         System.out.println(inverse);
   }
 
-  public static void initialize2(BigDecimal initpos, BigDecimal initvelocity, List<BigDecimal> x0, List<Hailstone> hs) {
+  public static void initialize2(BigDecimal initpos, BigDecimal initvelocity, List<BigDecimal> x0) {
     //initialize x,y,z
     x0.add(initpos);
     x0.add(initpos);
@@ -169,7 +157,7 @@ class Day24 {
   public static RealVector buildInitialVector(List<Hailstone> hs, BigDecimal initpos, BigDecimal initvelocity) {
     List<BigDecimal> init = new ArrayList<>();
     //initialize(init, hs);
-    initialize2(initpos, initvelocity, init, hs);
+    initialize2(initpos, initvelocity, init);
 
     double[] initval = new double[init.size() + hs.size()];
     for (int i = 0; i < init.size(); i++) initval[i] = init.get(i).doubleValue();
@@ -206,7 +194,7 @@ class Day24 {
 
     final RealVector start = buildInitialVector(hs, initpos, initvelocity);
     final RealVector observed = buildObservedVector(hs);
-    System.out.println(observed);
+    //System.out.println(observed);
     int maxEvaluations = maxIter * 1000;
     LeastSquaresProblem lsp = LeastSquaresFactory.create(
       new HailstoneJacobian(hs),
@@ -224,78 +212,83 @@ class Day24 {
     System.out.println(ans);
     String info = "Evals = " + String.valueOf(result.getEvaluations()) + ", Iters = " + String.valueOf(result.getIterations());
     System.out.println(info);
+    System.out.println(ans.getEntry(0));
+    System.out.println(ans.getEntry(1));
+    System.out.println(ans.getEntry(2));
     long ans2 = Math.round(ans.getEntry(0)) + Math.round(ans.getEntry(1)) + Math.round(ans.getEntry(2));
     return ans2;
   }
 
-  public static long part2(List<Hailstone> hs, int totalVariables, int maxIter, BigDecimal initpos, BigDecimal initvelocity, double lambda) {
+  public static Long part2(List<Hailstone> hs, int totalVariables, List<BigDecimal> velocities) {
     SystemOfEquations F = new SystemOfEquations();
     populateEquationsAll(F, hs, false);
-
-    SystemOfEquations jacobian = new SystemOfEquations();
-    populateEquationsAll(jacobian, hs, true);
 
     boolean hasChanged = true;
     //set x0
     List<BigDecimal> x0 = new ArrayList<>(totalVariables);
-    initialize(x0, hs);
-    System.out.println(x0);
-    /*
-    //initialize x,y,z
-    x0.add(initpos);
-    x0.add(initpos);
-    x0.add(initpos);
-    //initialize vx,vy,vz
-    x0.add(initvelocity);
-    x0.add(initvelocity);
-    x0.add(initvelocity);
-    */
 
     for (int i = 0; i < hs.size(); i++) {
       //intitalize timestamps
       x0.add(BigDecimal.ONE);
     }
+    //initialize x,y,z
+    x0.add(BigDecimal.ONE);
+    x0.add(BigDecimal.ONE);
+    x0.add(BigDecimal.ONE);
+    //initialize vx,vy,vz
+    x0.addAll(velocities);
+    //System.out.println(x0);
+    //Ax = B
+    //At . Ax = At. B
+    //x = (At.A)-1 . At. B
 
-    List<BigDecimal> x1 = new ArrayList<>();
-    x1.addAll(x0);
-    int iter = 0;
-    while(hasChanged && iter < maxIter) {
-      System.out.println("iter = " + String.valueOf(iter));
-      x0.clear();
-      x0.addAll(x1);
-      //x1 = x0 minus jacobian.inverse(x0) * F.eval(x0);
-      double[][] F_eval = F.eval(x0); //15 x 1 (m x 1)
-      double[][] jacobi = jacobian.eval2(x0); //mxn matrix 15 x 11
+    //x1 = x0 minus jacobian.inverse(x0) * F.eval(x0);
+    double[][] F_eval = F.eval2(x0, totalVariables); //15 x 11 
+    //printArr2D(F_eval);
 
-      RealMatrix F_eval_m = MatrixUtils.createRealMatrix(F_eval);
-      //System.out.println(getDim(F_eval_m));
-      //System.out.println(F_eval_m);
-      RealMatrix J = MatrixUtils.createRealMatrix(jacobi);
+    RealMatrix A = MatrixUtils.createRealMatrix(F_eval);
+    //System.out.println(getDim(F_eval_m));
+    //System.out.println(F_eval_m);
 
-      RealMatrix JT = J.transpose();
-      RealMatrix JTJ = JT.multiply(J);
-      RealMatrix JTJ2 = JTJ;
-      if (iter > 1) {
-        lambda = 0.0;
-      } else {
-        RealMatrix identity = createIdentityMatrix(JTJ.getRowDimension()).scalarMultiply(lambda);
-        JTJ2 = JTJ.add(identity);
+    RealMatrix At = A.transpose();
+    RealMatrix AtA = At.multiply(A);
+
+    RealMatrix identity = createIdentityMatrix(AtA.getRowDimension()).scalarMultiply(0.0001);
+    RealMatrix AtA2 = AtA.add(identity);
+   
+    RealMatrix AtA_inverse = MatrixUtils.inverse(AtA2);
+
+    RealMatrix Amult = AtA_inverse.multiply(At);
+    RealVector B = buildObservedVector(hs);
+    RealVector ans = Amult.operate(B);
+
+    List<BigDecimal> ans2 = createFromVector(ans);
+    ans2.addAll(velocities);
+
+    double[][] check = F.eval(ans2);
+    boolean found = true;
+    double eps = 1e-3;
+    for (int i = 0; i < B.getDimension(); i++) {
+      String msg = String.format("checking %4f against %4f", check[i][0], B.getEntry(i));
+      //System.out.println(msg);
+      if (Math.abs(check[i][0] - B.getEntry(i)) > eps) {
+        found = false;
+        break;
       }
-      RealMatrix JTJ_inverse = MatrixUtils.inverse(JTJ2);
-
-      RealMatrix Jmult = JTJ_inverse.multiply(JT);
-      System.out.println(getDim(Jmult));
-      System.out.println(Jmult);
-      RealMatrix mult = Jmult.multiply(F_eval_m);
-      //System.out.println(mult);
-      hasChanged = !isZeros(mult);
-
-      x1 = subtract(x0, mult);
-      printVec(x1, 6, 2);
-      iter++;
     }
-    printVec(x0, 11, 0);
-    return x0.get(0).add(x0.get(1)).add(x0.get(2)).setScale(0, RoundingMode.HALF_UP).longValue();
+    if (!found) return null;
+    System.out.println(ans);
+    return new Long(Math.round(ans.getEntry(totalVariables-3)) + Math.round(ans.getEntry(totalVariables-2)) + Math.round(ans.getEntry(totalVariables-1)));
+  }
+
+  public static List<BigDecimal> createFromVector(RealVector v) {
+    int n = v.getDimension();
+    List<BigDecimal> res = new ArrayList<>();
+    for (int i = 0; i < n; i++) {
+      res.add(new BigDecimal(v.getEntry(i)));
+    }
+
+    return res;
   }
 
   public static void printVec(List<BigDecimal> x0, int len, int scale) {
@@ -303,6 +296,17 @@ class Day24 {
     for (int i = 0; i < len; i++) {
       System.out.print(x0.get(i).setScale(scale, RoundingMode.HALF_UP));
       System.out.print(",");
+    }
+    System.out.println();
+  }
+  
+  public static void printArr2D(double[][] F_eval) {
+    for (int i = 0; i < F_eval.length; i++) {
+      for (int j = 0; j < F_eval[0].length; j++) {
+        System.out.print(F_eval[i][j]);
+        System.out.print(",");
+      }
+      System.out.println();
     }
     System.out.println();
   }
@@ -366,11 +370,12 @@ class Hailstone {
   public BigDecimal vx, vy, vz;
   public BigDecimal a, b, c;
   public List<Equation> equations3;
+  public List<Equation> linearEquations3;
   public List<Equation> jacobians3;
   public List<BigDecimal> equations3Value;
   public int id;
 
-  Hailstone(String s, int identity, int totalVariables) {
+  Hailstone(String s, int identity, int numHailStones) {
     int pos = 0;
     for (int i = 0; i < s.length(); i++) 
       if (s.charAt(i) == '@') {
@@ -443,6 +448,23 @@ class Hailstone {
     Equation jzeq = new Equation(Arrays.asList(jzt, jct, jzts1, jzts2));
 
     jacobians3 = Arrays.asList(jxeq, jyeq, jzeq);
+
+    Term ljxt = new Term(Arrays.asList(numHailStones), BigDecimal.ONE, numHailStones);
+    Term ljxts1 = new Term(Arrays.asList(id, numHailStones + 3), BigDecimal.ONE, id);
+    Term ljxts2 = new Term(Arrays.asList(id), vx.negate(), id);
+    Equation ljxeq = new Equation(Arrays.asList(ljxt, ljxts1, ljxts2));
+
+    Term ljyt = new Term(Arrays.asList(numHailStones+1), BigDecimal.ONE, numHailStones+1);
+    Term ljyts1 = new Term(Arrays.asList(id, numHailStones+4), BigDecimal.ONE, id);
+    Term ljyts2 = new Term(Arrays.asList(id), vy.negate(), id);
+    Equation ljyeq = new Equation(Arrays.asList(ljyt, ljyts1, ljyts2));
+
+    Term ljzt = new Term(Arrays.asList(numHailStones+2), BigDecimal.ONE, numHailStones+2);
+    Term ljzts1 = new Term(Arrays.asList(id, numHailStones+5), BigDecimal.ONE, id);
+    Term ljzts2 = new Term(Arrays.asList(id), vz.negate(), id);
+    Equation ljzeq = new Equation(Arrays.asList(ljzt, ljzts1, ljzts2));
+
+    linearEquations3 = Arrays.asList(ljxeq, ljyeq, ljzeq);
   }
 
   private static boolean inRange(BigDecimal x, BigDecimal low, BigDecimal high) {
@@ -524,10 +546,8 @@ class Hailstone {
 
 class SystemOfEquations {
   public List<Equation> equations;
-  public List<BigDecimal> equationsValue;
   SystemOfEquations() {
     equations = new ArrayList<>();
-    equationsValue = new ArrayList<>();
   }
 
   public double[][] eval(List<BigDecimal> x0) {
@@ -538,12 +558,12 @@ class SystemOfEquations {
     return result;
   }
 
-  public double[][] eval2(List<BigDecimal> x0) {
-    double[][] result = new double[equations.size()][x0.size()];
+  public double[][] eval2(List<BigDecimal> x0, int numVariables) {
+    double[][] result = new double[equations.size()][numVariables];
     for (int i = 0; i < equations.size(); i++) {
       Equation e = equations.get(i);
-      double[] eresult = e.eval2(x0);
-      for (int j = 0; j < x0.size(); j++)
+      double[] eresult = e.eval2(x0, numVariables);
+      for (int j = 0; j < numVariables; j++)
         result[i][j] = eresult[j];
     }
     return result;
@@ -568,8 +588,8 @@ class Equation {
   }
 
   //gives the value of each term
-  public double[] eval2(List<BigDecimal> x0) {
-    double[] result = new double[x0.size()];
+  public double[] eval2(List<BigDecimal> x0, int numVariables) {
+    double[] result = new double[numVariables];
     for (int i = 0; i < terms.size(); i++) {
       Term t = terms.get(i);
       result[t.pos] += t.eval(x0).doubleValue();
@@ -625,7 +645,7 @@ class HailstoneJacobian implements MultivariateJacobianFunction {
     List<BigDecimal> x0 = toBigDecimal(point);
 
     double[][] F_eval = F.eval(x0); //15 x 1 (m x 1)
-    double[][] jacobi = jacobian.eval2(x0); //mxn matrix 15 x 11
+    double[][] jacobi = jacobian.eval2(x0, x0.size()); //mxn matrix 15 x 11
 
     RealMatrix F_eval_m = MatrixUtils.createRealMatrix(F_eval);
     RealVector val = F_eval_m.getColumnVector(0);
