@@ -55,8 +55,17 @@ class Day24 {
       System.out.println("part 1: " + String.valueOf(total));
       //part2Test();
 
+      //long p2 = part2ls(hs, totalVariables, Integer.parseInt(args[1]), new BigDecimal(args[2]), new BigDecimal(args[3]), Double.parseDouble(args[4]));
+      long p2 = part2Reference(hs, Integer.parseInt(args[1]), Integer.parseInt(args[2]));
+      System.out.println("part 2: " + String.valueOf(p2));
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  public static void part2LinearEquations(List<Hailstone> hs, int totalVariables, int margin) {
       List<BigDecimal> velocities = new ArrayList<>();
-      int vlow = -1000, vhigh = 1000;
+      int vlow = -margin, vhigh = margin;
       for (int xi = vlow; xi <= vhigh; xi++)
       for (int xj = vlow; xj <= vhigh; xj++)
       for (int xk = vlow; xk <= vhigh; xk++) {
@@ -72,10 +81,6 @@ class Day24 {
           xi = xj = xk = vhigh + 1;
         }
       }
-      //long p2 = part2ls(hs, totalVariables, Integer.parseInt(args[1]), new BigDecimal(args[2]), new BigDecimal(args[3]), Double.parseDouble(args[4]));
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
   }
 
   public static void populateEquationsAll(SystemOfEquations soe, List<Hailstone> hs, boolean isJacobian) {
@@ -113,6 +118,107 @@ class Day24 {
         RealMatrix matrix = MatrixUtils.createRealMatrix(matrixData);
         RealMatrix inverse = MatrixUtils.inverse(matrix);
         System.out.println(inverse);
+  }
+
+  public static boolean doesRockMeetAllStones(List<Hailstone> hs, int n, List<BigDecimal> velocities, List<BigDecimal> point) {
+    //for each hailstone, reduce its velocity by the rocks velocity
+    for (int i = 0; i < n; i++) {
+      Hailstone h = hs.get(i);
+      h.vx = h.vx.add(velocities.get(0).negate());
+      h.vy = h.vy.add(velocities.get(1).negate());
+      h.vz = h.vz.add(velocities.get(2).negate());
+      h.resetLine();
+      //System.out.println(h);
+    }
+    //System.out.println();
+    //System.out.println();
+    //System.out.println();
+
+    boolean meets = true;
+    BigDecimal low = new BigDecimal("-10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+    BigDecimal high = new BigDecimal("10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+    BigDecimal[] ts = new BigDecimal[2];
+
+    //now, for each pair of hailstones, check if they meet in the future
+    Hailstone s1, s0;
+    for (int i = 0; meets && i < n; i++)
+    for (int j = i+1; meets && j < n; j++) {
+      s0 = hs.get(i);
+      s1 = hs.get(j);
+      meets = s0.meetsXY(s1, low, high, ts);
+      //System.out.println(s0);
+      //System.out.println(s1);
+      if (meets) {
+        //System.out.println("meets");
+        if (BigDecimal.ZERO.equals(ts[0]) && BigDecimal.ZERO.equals(ts[1])) continue;
+
+        List<BigDecimal> p0 = s0.where(ts[0]);
+        List<BigDecimal> p1 = s1.where(ts[1]);
+        for (int k = 0; meets && k < p0.size(); k++) {
+          meets = p0.get(k).equals(p1.get(k));
+        }
+
+        if (meets) {
+          point.clear();
+          point.addAll(p0);
+        }
+      } else {
+        //System.out.println("no meets");
+      }
+    }
+
+    for (int i = 0; i < n; i++) {
+      Hailstone h = hs.get(i);
+      h.vx = h.vx.add(velocities.get(0));
+      h.vy = h.vy.add(velocities.get(1));
+      h.vz = h.vz.add(velocities.get(2));
+      h.resetLine();
+    }
+    return meets;
+  }
+
+  public static long part2Reference(List<Hailstone> hs, int subset, int margin) {
+    List<BigDecimal> velocities = new ArrayList<>();
+    int vlow1 = -margin, vhigh1 = margin;
+    int vlow2 = -margin, vhigh2 = margin;
+    int vlow3 = -margin, vhigh3 = margin;
+    boolean flag = true;
+    int ct = 1;
+
+    List<Hailstone> hs2 = new ArrayList<>();
+    for (int i = 0; i < subset && i < hs.size(); i++) {
+      hs2.add(hs.get(i));
+    }
+
+    List<BigDecimal> point = new ArrayList<>();
+    BigDecimal result = BigDecimal.ONE;
+    for (int xi = vlow1; xi <= vhigh1; xi++)
+    for (int xj = vlow2; xj <= vhigh2; xj++)
+    for (int xk = vlow3; xk <= vhigh3; xk++) {
+      List<BigDecimal> velo = new ArrayList<>();
+      velo.add(new BigDecimal(xi));
+      velo.add(new BigDecimal(xj));
+      velo.add(new BigDecimal(xk));
+
+      flag = doesRockMeetAllStones(hs2, subset, velo, point);
+      if (flag) {
+        ct++;
+        System.out.println(String.format("With velocities %s, subset of size %d works at point %s", velo, subset, point));
+        flag = doesRockMeetAllStones(hs, hs.size(), velo, point);
+        if (flag) {
+          System.out.println(String.format("result number %d", ct));
+          System.out.println(velo);
+          System.out.println(point);
+          result = point.get(0).add(point.get(1)).add(point.get(2));
+          xi = vhigh1 + 1;
+          xj = vhigh2 + 1;
+          xk = vhigh3 + 1;
+        } else {
+          System.out.println(String.format("However, doesn't work with all %d stones", hs.size()));
+        }
+      }
+    }
+    return result.longValueExact();
   }
 
   public static void initialize2(BigDecimal initpos, BigDecimal initvelocity, List<BigDecimal> x0) {
@@ -346,13 +452,14 @@ class Day24 {
   public static int part1(List<Hailstone> hs, BigDecimal low, BigDecimal high) {
     int n = hs.size();
     int ans = 0;
+    BigDecimal[] ts = new BigDecimal[2];
     for (int i = 0; i < n; i++) {
       Hailstone hi = hs.get(i);
       for (int j = i+1; j < n; j++) {
         Hailstone hj = hs.get(j);
         //System.out.println(hi);
         //System.out.println(hj);
-        if (hi.meetsXY(hj, low, high)) {
+        if (hi.meetsXY(hj, low, high, ts)) {
           //System.out.println("YES");
           ans++;
         } else {
@@ -466,6 +573,12 @@ class Hailstone {
 
     linearEquations3 = Arrays.asList(ljxeq, ljyeq, ljzeq);
   }
+  
+  public void resetLine() {
+    a = vy;
+    b = vx.multiply(new BigDecimal("-1"));
+    c = vx.multiply(py).add(vy.multiply(px).negate());
+  }
 
   private static boolean inRange(BigDecimal x, BigDecimal low, BigDecimal high) {
     return (x.compareTo(low) >= 0) && (x.compareTo(high) <= 0);
@@ -479,7 +592,7 @@ class Hailstone {
     return this.vx.equals(BigDecimal.ZERO) && this.vy.equals(BigDecimal.ZERO);
   }
 
-  public boolean meetsXY(Hailstone h, BigDecimal low, BigDecimal high) {
+  public boolean meetsXY(Hailstone h, BigDecimal low, BigDecimal high, BigDecimal[] timestamp) {
     if (this.px.equals(h.px) && this.py.equals(h.py)) {
       //check if the point lies within the range
       return Hailstone.inRange(px, low, high) && Hailstone.inRange(py, low, high);
@@ -496,8 +609,9 @@ class Hailstone {
       if (!this.c.multiply(h.a).equals(h.c.multiply(this.a))) return false;
 
       //since the lines are identical, its possible the stones will intersect.
-      System.out.println("sugarg Lets see if this is a case");
-      return false;
+      //System.out.println("sugarg Lets see if this is a case");
+      timestamp[0] = timestamp[1] = BigDecimal.ZERO;
+      return true;
     }
 
     BigDecimal x = BigDecimal.ONE;
@@ -532,9 +646,19 @@ class Hailstone {
 
     if (t1.compareTo(BigDecimal.ZERO) >= 0 && t2.compareTo(BigDecimal.ZERO) >= 0) {
       //System.out.println(x + "," + y);
+      timestamp[0] = t1;
+      timestamp[1] = t2;
       return true;
     }
     return false;
+  }
+
+  public List<BigDecimal> where(BigDecimal t) {
+    BigDecimal x = px.add(vx.multiply(t));
+    BigDecimal y = py.add(vy.multiply(t));
+    BigDecimal z = pz.add(vz.multiply(t));
+    List<BigDecimal> point = Arrays.asList(x,y,z);
+    return point;
   }
 
   @Override
