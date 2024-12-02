@@ -84,5 +84,91 @@ public class Day2 {
 
         return true;
     }
-    public long part2() { return 0; }
+
+    private boolean isSafe2(List<Integer> arr) {
+        //System.out.println(String.format("testing %s", arr.toString()));
+        int n = arr.size();
+        if (n < 3) return true;
+
+        boolean ok = false;
+
+        int[] faultyIndex = new int[1];
+        int fault;
+        //increasing
+        ok = safeHelper(true, 0, 1, arr, faultyIndex);
+        if (ok) return true;
+        fault = faultyIndex[0];
+
+        //1, 3, 2, 6: leave 2
+        //f = 2, f-1, f+1
+        ok = safeHelper(true, fault - 1, fault + 1, arr, faultyIndex);
+        if (ok) return true;
+
+        //1, 3, 2, 3: leave 3
+        //f = 2, f-2, f
+        ok = safeHelper(true, fault - 2, fault, arr, faultyIndex);
+        if (ok) return true;
+
+        //decreasing
+        ok = safeHelper(false, 0, 1, arr, faultyIndex);
+        if (ok) return true;
+        fault = faultyIndex[0];
+
+        ok = safeHelper(false, fault - 1, fault + 1, arr, faultyIndex);
+        if (ok) return true;
+
+        ok = safeHelper(false, fault - 2, fault, arr, faultyIndex);
+        if (ok) return true;
+
+        return false;
+    }
+
+    private boolean safeHelper(boolean increasing, int currIndex, int startIndex, List<Integer> arr, int[] faultyIndex) {
+        //System.out.println(String.format("in incr: %s, currIndex: %d, startIndex: %d", increasing, currIndex, startIndex));
+        int n = arr.size();
+        if (startIndex >= n) return false;
+        if (currIndex < 0) {
+            currIndex = startIndex;
+            startIndex++;
+        }
+
+        int a, b;
+        a = arr.get(currIndex);
+        for (int i = startIndex; i < n; i++) {
+            b = arr.get(i);
+            if (increasing) {
+                if (b <= a || ((b - a) > 3)) {
+                    faultyIndex[0] = i;
+                    return false;
+                }
+            } else {
+                if (b >= a || ((a - b) > 3)) {
+                    faultyIndex[0] = i;
+                    return false;
+                }
+            }
+            a = b;
+        }
+
+        return true;
+    }
+
+    public long part2() {
+        //check with the following conditions
+        //decreasing
+        //increasing
+        //given current num, index from where to look, and integer
+        
+
+        long safe = 0;
+        for (int i = 0; i < levels.size(); i++) {
+            if (isSafe2(levels.get(i))) {
+                safe++;
+            } else {
+                //System.out.print("unsafe: ");
+                //System.out.println(levels.get(i));
+            }
+        }
+        return safe;
+    }
 }
