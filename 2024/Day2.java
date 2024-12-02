@@ -85,6 +85,19 @@ public class Day2 {
         return true;
     }
 
+    private boolean isSafeBrute(List<Integer> arr) {
+      int n = arr.size();
+      for (int i = 0; i < n; i++) {
+        List<Integer> newArr = new ArrayList<>();
+        for (int j = 0; j < n; j++) {
+          if (i == j) continue;
+          newArr.add(arr.get(j));
+        }
+        if (isSafe(newArr)) return true;
+      }
+      return false;
+    }
+
     private boolean isSafe2(List<Integer> arr) {
         //System.out.println(String.format("testing %s", arr.toString()));
         int n = arr.size();
@@ -126,7 +139,7 @@ public class Day2 {
     private boolean safeHelper(boolean increasing, int currIndex, int startIndex, List<Integer> arr, int[] faultyIndex) {
         //System.out.println(String.format("in incr: %s, currIndex: %d, startIndex: %d", increasing, currIndex, startIndex));
         int n = arr.size();
-        if (startIndex >= n) return false;
+        if (startIndex >= n) return true;
         if (currIndex < 0) {
             currIndex = startIndex;
             startIndex++;
@@ -161,12 +174,15 @@ public class Day2 {
         
 
         long safe = 0;
+        boolean safe1, safe2;
         for (int i = 0; i < levels.size(); i++) {
-            if (isSafe2(levels.get(i))) {
+            safe1 = isSafeBrute(levels.get(i));
+            safe2 = isSafe2(levels.get(i));
+            if (safe2) {
                 safe++;
-            } else {
-                //System.out.print("unsafe: ");
-                //System.out.println(levels.get(i));
+            }
+            if (safe1 != safe2) {
+                System.out.println(String.format("safe1: %s, safe2: %s, level: %s", safe1, safe2, levels.get(i)));
             }
         }
         return safe;
