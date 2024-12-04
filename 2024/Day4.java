@@ -36,7 +36,8 @@ class Solution {
 
 public class Day4 {
     private List<String> inputs;
-    private int[][] dirs = {{0, -1}, {-1, -1}, {-1, 0}, {-1, 1}, {0, 1}, {1, 1}, {1, 0}, {1, -1}}; //L, UL, UP, UR, R, DR, D, DL
+    private int[][] dirs =  {{0, -1}, {-1, -1}, {-1, 0}, {-1, 1}, {0, 1}, {1, 1}, {1, 0}, {1, -1}}; //L, UL, UP, UR, R, DR, D, DL
+    private int[][] diags = {         {-1, -1},          {-1, 1},         {1, 1},         {1, -1}}; //   UL,     UR,    DR,    DL
     Day4(List<String> arr) {
         inputs = arr;
     }
@@ -45,40 +46,37 @@ public class Day4 {
       int m = inputs.size();
       int n = inputs.get(0).length();
 
-      int[][] counts = new int[m][n];
-      //printGrid();
-      char[] find = new char[4];
-      find[0] = 'S'; find[1] = 'A'; find[2] = 'M'; find[3] = 'X';
-
       char c;
       int nr, nc;
       long total = 0;
-      for (int letter = 0; letter < 4; letter++) {
+      int[] diagonals = new int[4];
+      int M, S;
         for (int i = 0; i < m; i++) {
           String row = inputs.get(i);
           for (int j = 0; j < n; j++) {
             c = row.charAt(j);
-            if (c != find[letter]) continue;
+            if (c != 'A') continue;
             //System.out.println(String.format("testing char %c, r: %d, c: %d", inputs.get(i).charAt(j), i, j));
+            diagonals[0] = diagonals[1] = diagonals[2] = diagonals[3] = -1;
+            M = S = 0;
 
-            if (letter == 0) {
-              counts[i][j] = 1;
-              continue;
+            for (int d = 0; d < 4; d++) {
+              nr = i + diags[d][0];
+              nc = j + diags[d][1];
+              if (!ok(nr, nc, m, n)) continue;
+              if (inputs.get(nr).charAt(nc) == 'M') {
+                diagonals[d] = 1;
+                M++;
+              }
+              else if (inputs.get(nr).charAt(nc) == 'S') {
+                diagonals[d] = 2;
+                S++;
+              }
+              else break;
             }
-
-            for (int d = 0; d < 8; d++) {
-              nr = i + dirs[d][0];
-              nc = j + dirs[d][1];
-              if (nr < 0 || nr >= m || nc < 0 || nc >= n) continue;
-              if (inputs.get(nr).charAt(nc) == find[letter-1])
-                counts[i][j] += counts[nr][nc];
-            }
-
-            if (letter == 3) total += counts[i][j];
+            if (M == S && M == 2 && diagonals[0] != diagonals[2]) total++;
           }
         }
-      }
-      //printCounts(counts);
 
       return total;
     }
