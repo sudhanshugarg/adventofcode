@@ -19,7 +19,7 @@ class Solution {
       String line = bufreader.readLine();
       List<String> locations = new ArrayList<>();
       while(line != null) {
-	locations.add(line);
+       	locations.add(line);
         line = bufreader.readLine();
       }
       bufreader.close();
