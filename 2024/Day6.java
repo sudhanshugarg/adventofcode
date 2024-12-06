@@ -163,32 +163,6 @@ public class Day6 {
       }
     }
 
-    private boolean isGoingOut(Segment s, int f) {
-      switch(f) {
-        case 0: //L
-          return (
-              (!s.isRow && s.id == 0) ||
-              (s.isRow && s.start == 0)
-          );
-        case 1: //U
-          return (
-              (s.isRow && s.id == 0) ||
-              (!s.isRow && s.start == 0)
-          );
-        case 2: //R
-          return (
-              (!s.isRow && s.id == n-1) ||
-              (s.isRow && s.end == m-1)
-          );
-        case 3: //D
-          return (
-              (s.isRow && s.id == m-1) ||
-              (!s.isRow && s.end == n-1)
-          );
-      }
-      return false;
-    }
-
     private long countTravelled(List<Segment> segments) {
       boolean[][] grid = new boolean[m][n];
 
@@ -214,7 +188,80 @@ public class Day6 {
       return total;
     }
 
-    public long part2() { return 0; }
+    private void addObstacle(int r, int c) {
+      int i;
+      List<Integer> row = rowObstacles.get(r);
+      for (i = 0; i < row.size(); i++) {
+        if (row.get(i) > c) break;
+      }
+      row.add(i, c);
+
+      List<Integer> col = colObstacles.get(c);
+      for (i = 0; i < col.size(); i++) {
+        if (col.get(i) > r) break;
+      }
+      col.add(i, r);
+    }
+
+
+    private void removeObstacle(int r, int c) {
+      int i;
+      List<Integer> row = rowObstacles.get(r);
+      for (i = 0; i < row.size(); i++) {
+        if (row.get(i) == c) break;
+      }
+      row.remove(i);
+
+      List<Integer> col = colObstacles.get(c);
+      for (i = 0; i < col.size(); i++) {
+        if (col.get(i) == r) break;
+      }
+      col.remove(i);
+    }
+
+    public long part2() {
+      System.out.println(String.format("init: m: %d, n: %d, facing: %d, posn:[%d, %d]", m, n, facing, sr, sc));
+      boolean[] goingOut = new boolean[1];
+      int r, c, f;
+      char posn;
+      long total = 0;
+
+      for (int i = 0; i < m; i++)
+      for (int j = 0; j < n; j++) {
+        posn = inputs.get(i).charAt(j);
+        if (posn != '.') continue;
+
+        addObstacle(i, j);
+
+        r = sr; c = sc; f = facing;
+        Set<Segment> segmentSet = new HashSet<>();
+        goingOut[0] = false;
+        while(!goingOut[0]) {
+          Segment s = travel(r, c, f, goingOut);
+          if (segmentSet.contains(s)) {
+            total++;
+            break;
+          }
+          segmentSet.add(s);
+
+          if (s.isRow) {
+            //r is unchanged
+            if (f == 0) c = s.start;
+            else c = s.end;
+          } else {
+            //c is unchanged
+            if (f == 1) r = s.start;
+            else r = s.end;
+          }
+
+          f++;
+          if (f == 4) f = 0;
+        }
+
+        removeObstacle(i, j);
+      }
+      return total;
+    }
 }
 
 
@@ -242,5 +289,20 @@ class Segment {
   public String toString() {
     if (isRow) return String.format("row: %d, [%d, %d]", id, start, end);
     else return String.format("col: %d, [%d, %d]", id, start, end);
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) return true;
+    if (obj == null) return false;
+    if (getClass() != obj.getClass()) return false;
+
+    Segment other = (Segment) obj;
+    return (this.id == other.id && this.isRow == other.isRow && this.start == other.start && this.end == other.end);
+  }
+
+  @Override
+  public int hashCode() {
+    return 31 * this.id + (this.isRow ? 87 : 83) + 23 * this.start + 41 * this.end;
   }
 }
