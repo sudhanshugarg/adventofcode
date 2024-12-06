@@ -129,15 +129,14 @@ public class Day5 {
       int[] update;
       long total = 0;
       for (int i = 0; i < ordering.size(); i++) {
-        //System.out.print("testing: ");
         update = ordering.get(i);
-        //printArr(update);
+        createMetaData(update);
         if (isCorrect(update)) total += update[update.length/2];
       }
       return total;
     }
 
-    private boolean isCorrect(int[] update) {
+    private void createMetaData(int[] update) {
       Set<Integer> consideredPages = new HashSet<>();
       for (int i = 0; i < update.length; i++) consideredPages.add(update[i]);
 
@@ -155,11 +154,9 @@ public class Day5 {
       }
       parseList(filteredDeps, adjList);
       createPriorList(adjList, priorPageList);
-
-      return isCorrectCheck(update);
     }
 
-    private boolean isCorrectCheck(int[] update) {
+    private boolean isCorrect(int[] update) {
       int n = update.length;
       Set<Integer> visited = new HashSet<>();
       for (int i = 0; i < n; i++) {
@@ -172,5 +169,29 @@ public class Day5 {
       return true;
     }
 
-    public long part2() { return 0; }
+
+    private int[] fix(int[] update) {
+      int n = update.length;
+      int[] fixed = new int[n];
+
+      for (int i = 0; i < n; i++) {
+        fixed[n - 1 - priorPageList.get(update[i]).size()] = update[i];
+      }
+
+      return fixed;
+    }
+
+    public long part2() {
+      int[] update, fixed;
+      long total = 0;
+      for (int i = 0; i < ordering.size(); i++) {
+        update = ordering.get(i);
+        createMetaData(update);
+        if (!isCorrect(update)) {
+          fixed = fix(update);
+          total += fixed[fixed.length/2];
+        }
+      }
+      return total;
+    }
 }
