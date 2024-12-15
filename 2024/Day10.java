@@ -1,10 +1,12 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -85,6 +87,69 @@ public class Day10 {
     }
 
     public long part2() {
-      return 0;
+      int m = inputs.size();
+      int n = inputs.get(0).length();
+      long[][] waysToTrailHead = new long[m][n];
+      boolean[][] addedToQueue = new boolean[m][n];
+
+      Queue<Node> fifo = new ArrayDeque<>();
+
+      Node curr, next;
+      char c;
+      for (int i = 0; i < m; i++)
+      for (int j = 0; j < n; j++) {
+        c = inputs.get(i).charAt(j);
+        if (c == '0') {
+          curr = new Node(i, j);
+          fifo.offer(curr);
+          waysToTrailHead[i][j] = 1;
+          addedToQueue[i][j] = true;
+        }
+      }
+
+      long total = 0;
+
+      int nr, nc;
+      char adj;
+      while (!fifo.isEmpty()) {
+        curr = fifo.poll();
+        c = inputs.get(curr.r).charAt(curr.c);
+
+        if (c == '9') {
+          total += waysToTrailHead[curr.r][curr.c];
+        }
+
+        for (int i = 0; i < dirs.length; i++) {
+          nr = curr.r + dirs[i][0];
+          nc = curr.c + dirs[i][1];
+
+          if (nr < 0 || nr >= m || nc < 0 || nc >= n) {
+            continue;
+          }
+
+          adj = inputs.get(nr).charAt(nc);
+          if (adj != (c + 1)) continue;
+
+          waysToTrailHead[nr][nc] += waysToTrailHead[curr.r][curr.c];
+
+          if (!addedToQueue[nr][nc]) {
+            next = new Node(nr, nc);
+            fifo.offer(next);
+            addedToQueue[nr][nc] = true;
+          }
+        }
+      }
+
+      return total;
     }
+}
+
+class Node {
+  public int r;
+  public int c;
+
+  Node(int a, int b) {
+    r = a;
+    c = b;
+  }
 }
