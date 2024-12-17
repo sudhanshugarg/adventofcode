@@ -12,7 +12,6 @@ class ClawMachine:
         self.a = self._parseLine(A)
         self.b = self._parseLine(B)
         self.prize = self._parseLine(Prize)
-        self.MAX_PRESSES = 101
 
         # print(self.a)
         # print(self.b)
@@ -28,7 +27,9 @@ class ClawMachine:
     def minTokens(self):
         min_tokens = 0
         only_button_a = self._single_equation(self.a)
+        # print (f"A: {only_button_a}")
         only_button_b = self._single_equation(self.b)
+        # print (f"B: {only_button_b}")
 
         if only_button_a > 0:
             min_tokens = 3 * only_button_a
@@ -39,16 +40,26 @@ class ClawMachine:
 
         # both buttons
         y_lcm = self._lcm(self.b[0], self.b[1])
+
         equation1_multiplier = y_lcm / self.b[0]
         equation2_multiplier = y_lcm / self.b[1]
+        # print(f"y_lcm = {y_lcm}, e1 = {equation1_multiplier}, e2 = {equation2_multiplier}")
 
         lhs = equation1_multiplier * self.a[0] - equation2_multiplier * self.a[1]
         rhs = equation1_multiplier * self.prize[0] - equation2_multiplier * self.prize[1]
 
+        # print(f"y_lcm = {y_lcm}, e1 = {equation1_multiplier}, e2 = {equation2_multiplier}")
+
         both_buttons = [0, 0]
         if lhs != 0 and rhs % lhs == 0:
             both_buttons[0] = rhs / lhs
-            both_buttons[1] = (self.prize[0] - both_buttons[0] * self.a[0]) / self.b[0]
+            both_buttons[1] = (self.prize[0] - (both_buttons[0] * self.a[0]))
+            if both_buttons[1] % self.b[0] == 0:
+                both_buttons[1] /= self.b[0]
+            else:
+                both_buttons = [0, 0]
+
+        # print (f"both: {both_buttons}")
 
         if both_buttons[0] > 0 and both_buttons[1] > 0:
             cost = 3 * both_buttons[0] + both_buttons[1]
@@ -85,21 +96,29 @@ class Day13:
         with open(filename, 'r') as f:
             self.input = f.readlines()
 
+        self.HUGE_NUMBER = 10000000000000
         self.claws = []
         for i in range(0, len(self.input), 4):
             self.claws.append(ClawMachine(self.input[i], self.input[i + 1], self.input[i + 2]))
 
-    def part1(self):
+    def common(self, increment: bool):
         n = len(self.claws)
         total = 0
         for i in range(n):
+            if increment:
+                self.claws[i].prize[0] += self.HUGE_NUMBER
+                self.claws[i].prize[1] += self.HUGE_NUMBER
+
             next_count = self.claws[i].minTokens()
-            print(self.claws[i], next_count)
+            # print(self.claws[i], next_count)
             total += next_count
         return total
 
+    def part1(self):
+        return self.common(False)
+
     def part2(self):
-        return -1
+        return self.common(True)
 
 
 def run(args):
