@@ -18,9 +18,7 @@ class DayX:
 
 
 def run(args):
-    inputFileName = args[1]
-
-    day = DayX(inputFileName)
+    day = DayX(args[1])
     print(day.part1())
     print(day.part2())
 
