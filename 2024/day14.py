@@ -58,9 +58,39 @@ class Day14:
         return counts[0][0] * counts[0][1] * counts[1][0] * counts[1][1]
 
     def part2(self):
-        return -1
+        jumps = 71
 
 
+        while True:
+
+            hq = [[0 for j in range(self.n)] for i in range(self.m)]
+            for r in self.robots:
+                nx = r.position[1] + jumps * r.velocity[1]
+                ny = r.position[0] + jumps * r.velocity[0]
+
+                nx %= self.m
+                ny %= self.n
+                hq[nx][ny] += 1
+                # print(f"[{nx}, {ny}]")
+
+            print(f"After jump {jumps}, positions are")
+            self._printHq(hq)
+            print()
+            jumps += 101
+            input("Enter to continue...")
+
+        return 8050
+
+
+    def _printHq(self, arr: List[List[int]]):
+        for i in range(self.m):
+            line = ""
+            for j in range(self.n):
+                if arr[i][j] == 0:
+                    line += " "
+                else:
+                    line += str(arr[i][j])
+            print(line)
 def run(args):
     day = Day14(args[1])
     print(day.part1())
