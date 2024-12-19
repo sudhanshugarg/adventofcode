@@ -20,19 +20,42 @@ class Robot:
 
 class Day14:
     def __init__(self, filename: str):
+        self.m = 103
+        self.n = 101
+        self.m2 = int(self.m / 2)
+        self.n2 = int(self.n / 2)
         with open(filename, 'r') as f:
             self.input = f.readlines()
 
-        robots = []
+        self.robots = []
         for line in self.input:
             r = Robot(line)
-            robots.append(r)
-            print(r)
-
-        # print(robots)
+            self.robots.append(r)
 
     def part1(self):
-        return len(self.input)
+        jumps = 100
+        counts = [[0, 0], [0, 0]]
+        for r in self.robots:
+            nx = r.position[1] + jumps * r.velocity[1]
+            ny = r.position[0] + jumps * r.velocity[0]
+
+            nx %= self.m
+            ny %= self.n
+            # print(f"[{nx}, {ny}]")
+            if (nx == self.m2) or (ny == self.n2):
+                continue
+
+            xcoord = 0
+            ycoord = 0
+            if nx > self.m2:
+                xcoord = 1
+            if ny > self.n2:
+                ycoord = 1
+
+            counts[xcoord][ycoord] += 1
+
+        print(counts)
+        return counts[0][0] * counts[0][1] * counts[1][0] * counts[1][1]
 
     def part2(self):
         return -1
