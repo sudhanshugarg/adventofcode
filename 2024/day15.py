@@ -92,7 +92,7 @@ class Day15:
 
         #Down
         for j in range(self.n):
-            self._updateUp(j)
+            self._updateDown(j)
 
     def _moveLeft(self):
         nc = self.c - 1
@@ -119,6 +119,7 @@ class Day15:
 
             self.grid[self.r][nc] = '.'
             self.grid[self.r][nextAvailable] = 'O'
+            self.c = nc
 
             self._updateLeft(self.r)
             self._updateRight(self.r)
@@ -152,6 +153,7 @@ class Day15:
 
             self.grid[nr][self.c] = '.'
             self.grid[nextAvailable][self.c] = 'O'
+            self.r = nr
 
             self._updateUp(self.c)
             self._updateDown(self.c)
@@ -165,7 +167,11 @@ class Day15:
         for i in range(self.m):
             line = ""
             for j in range(self.n):
-                line += self.grid[i][j]
+                if i == self.r and j == self.c:
+                    line += '@'
+                else:
+                    line += self.grid[i][j]
+
                 if self.grid[i][j] == 'O':
                     total += ((100 * i) + j)
 
@@ -179,7 +185,9 @@ class Day15:
     def part1(self):
         print(f"[{self.m}, {self.n}], start:[{self.r}, {self.c}], directions = {len(self.directions)}")
         self._initialize_empty_cells()
+        # print(self.nextEmpty[3][1])
 
+        self._printAndComputeGrid(True)
         for i in range(len(self.directions)):
             d = self.directions[i]
             if d == '<':
@@ -193,6 +201,9 @@ class Day15:
             else:
                 print(f"unknown direction {d}")
                 return -100
+
+            # print(f"after direction {i}: {d}")
+            # self._printAndComputeGrid(True)
 
         return self._printAndComputeGrid(True)
 
