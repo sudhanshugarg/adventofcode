@@ -38,13 +38,24 @@ class Day15:
         self.grid[self.r][self.c] = '.' #change robot position to be empty
         self.dirs = [[0, -1], [-1, 0], [0, 1], [1, 0]] #L, U, R, D
 
-        self.g = [[self._getWide(gridstr[i][j], i, j) for j in range(self.n)] for i in range(self.m)]
+        # self.g = [[self._getWide(gridstr[i][j], i, j) for j in range(self.n)] for i in range(self.m)]
+        self.g = []
+        self.row = self.r
+        self.col = self.c * 2
+        for i in range(self.m):
+            row = []
+            for j in range(self.n):
+                next2 = self._getWide(self.grid[i][j], i, j)
+                row.append(next2[0])
+                row.append(next2[1])
+            self.g.append(row)
+
         self.p = 2 * self.n
         self.movement = {
-            '<' : 0,
-            '^' : 1,
-            '>' : 2,
-            'v' : 3,
+            '<': 0,
+            '^': 1,
+            '>': 2,
+            'v': 3,
         }
 
     def _getWide(self, s: str, i: int, j: int):
@@ -55,9 +66,7 @@ class Day15:
         elif s == ".":
             return ".."
         elif s == "@":
-            self.row = i
-            self.col = 2 * j
-            return "@."
+            return ".."
         else:
             print("something wrong")
             return "!!"
@@ -186,17 +195,19 @@ class Day15:
             self._updateLeft(nextAvailable)
             self._updateRight(nextAvailable)
 
-    def _printAndComputeGrid(self, should_print: bool = False):
+    def _printAndComputeGrid(self, gridmap: List[List[str]], r: int, c: int, should_print: bool = False):
         total = 0
-        for i in range(self.m):
+        m = len(gridmap)
+        n = len(gridmap[0])
+        for i in range(m):
             line = ""
-            for j in range(self.n):
-                if i == self.r and j == self.c:
+            for j in range(n):
+                if i == r and j == c:
                     line += '@'
                 else:
-                    line += self.grid[i][j]
+                    line += gridmap[i][j]
 
-                if self.grid[i][j] == 'O':
+                if gridmap[i][j] == 'O' or gridmap[i][j] == '[':
                     total += ((100 * i) + j)
 
             if should_print:
@@ -211,7 +222,7 @@ class Day15:
         self._initialize_empty_cells()
         # print(self.nextEmpty[3][1])
 
-        self._printAndComputeGrid(True)
+        self._printAndComputeGrid(self.grid, self.r, self.c, True)
         for i in range(len(self.directions)):
             d = self.directions[i]
             if d == '<':
@@ -229,35 +240,173 @@ class Day15:
             # print(f"after direction {i}: {d}")
             # self._printAndComputeGrid(True)
 
-        return self._printAndComputeGrid(True)
+        return self._printAndComputeGrid(self.grid, self.r, self.c, True)
+
+    def _dfsLeft(self, should_move: bool, r: int, c: int):
+        # print(f"Entering to go left [{r}, {c}]")
+        if c <= 0:
+            return False
+
+        if self.g[r][c] == '.':
+            # print(f"found empty at [{r}, {c}]")
+            if should_move:
+                self.g[r][c] = '['
+                self.g[r][c + 1] = ']'
+            return True
+
+        if self.g[r][c] == '#':
+            return False
+
+        if self.g[r][c] == '[':
+            print(f"something is wrong [{r}{c}], {self.g[r][c]}")
+            return False
+
+        # has to be ]
+        canMove = self._dfsLeft(should_move, r, c - 2)
+        if canMove and should_move:
+            self.g[r][c] = '['
+            self.g[r][c + 1] = ']'
+        return canMove
+
+
+    def _dfsRight(self, should_move: bool, r: int, c: int):
+        if c > (self.p - 2):
+            return False
+
+        if self.g[r][c] == '.':
+            if should_move:
+                self.g[r][c - 1] = '['
+                self.g[r][c] = ']'
+            return True
+
+        if self.g[r][c] == '#':
+            return False
+
+        if self.g[r][c] == ']':
+            print(f"something is wrong [{r}{c}], {self.g[r][c]}")
+            return False
+
+        # has to be [
+        canMove = self._dfsRight(should_move, r, c + 2)
+        if canMove and should_move:
+            self.g[r][c - 1] = '['
+            self.g[r][c] = ']'
+        return canMove
+
+    def _dfsUp(self, should_move: bool, r: int, c: int):
+        if r <= 0:
+            return False
+
+        if self.g[r][c] == '.':
+            return True
+
+        if self.g[r][c] == '#':
+            return False
+
+        if self.g[r][c] == '[':
+            canMove = self._dfsUp(should_move, r - 1, c) and self._dfsUp(should_move, r - 1, c + 1)
+            if canMove and should_move:
+                self.g[r - 1][c] = '['
+                self.g[r - 1][c + 1] = ']'
+                self.g[r][c] = '.'
+                self.g[r][c + 1] = '.'
+            return canMove
+
+        if self.g[r][c] == ']':
+            canMove = self._dfsUp(should_move, r - 1, c) and self._dfsUp(should_move, r - 1, c - 1)
+            if canMove and should_move:
+                self.g[r - 1][c] = ']'
+                self.g[r - 1][c - 1] = '['
+                self.g[r][c] = '.'
+                self.g[r][c - 1] = '.'
+            return canMove
+
+    def _dfsDown(self, should_move: bool, r: int, c: int):
+        if r >= (self.m - 1):
+            return False
+
+        if self.g[r][c] == '.':
+            return True
+
+        if self.g[r][c] == '#':
+            return False
+
+        if self.g[r][c] == '[':
+            canMove = self._dfsDown(should_move, r + 1, c) and self._dfsDown(should_move, r + 1, c + 1)
+            if canMove and should_move:
+                self.g[r + 1][c] = '['
+                self.g[r + 1][c + 1] = ']'
+                self.g[r][c] = '.'
+                self.g[r][c + 1] = '.'
+            return canMove
+
+        if self.g[r][c] == ']':
+            canMove = self._dfsDown(should_move, r + 1, c) and self._dfsDown(should_move, r + 1, c - 1)
+            if canMove and should_move:
+                self.g[r + 1][c] = ']'
+                self.g[r + 1][c - 1] = '['
+                self.g[r][c] = '.'
+                self.g[r][c - 1] = '.'
+            return canMove
+
 
     def part2(self):
         # start from self.row and self.col
         # for each direction, try and move there. If you can move, no issues
         # if you have some obstacle, then do accordingly
+        self._printAndComputeGrid(self.g, self.row, self.col, True)
+
         for i in range(len(self.directions)):
             d = self.directions[i]
+            # print(f"after direction {d}")
             self._move(self.movement[d])
 
-        return -1
+        return self._printAndComputeGrid(self.g, self.row, self.col, True)
+
 
     def _move(self, d: int):
         nr = self.row + self.dirs[d][0]
         nc = self.col + self.dirs[d][1]
 
         # now we are using self.m and self.p for max row and max col
+        # print(f"[{nr}, {nc}] with direction [{d}]")
         if nr < 0 or nr >= (self.m - 1) or nc < 0 or nc >= (self.p - 2) or (self.g[nr][nc] == '#'):
-            return
-
-        if self.g[nr][nc] == '.':
-            self.row = nr
-            self.col = nc
             return
 
         # now it can only be [ or ]
         # this means we need to do two dfs
         # first dfs is to get whether movement is possible
-        # second dfs is to actually do the movement, given that it is possible
+        canMove = False
+
+        if d == 0:
+            canMove = self._dfsLeft(False, nr, nc)
+            if canMove:
+                self._dfsLeft(True, nr, nc)
+                self.g[self.row][self.col] = '.'
+        elif d == 1:
+            canMove = self._dfsUp(False, nr, nc)
+            if canMove:
+                self._dfsUp(True, nr, nc)
+                self.g[self.row][self.col] = '.'
+        elif d == 2:
+            canMove = self._dfsRight(False, nr, nc)
+            if canMove:
+                self._dfsRight(True, nr, nc)
+                self.g[self.row][self.col] = '.'
+        elif d == 3:
+            canMove = self._dfsDown(False, nr, nc)
+            if canMove:
+                self._dfsDown(True, nr, nc)
+                self.g[self.row][self.col] = '.'
+        else:
+            print(f"incorrect direction {d}")
+            return
+
+        if canMove:
+            self.row = nr
+            self.col = nc
+            self.g[self.row][self.col] = '.'
+        # self._printAndComputeGrid(self.g, self.row, self.col, True)
 
 def run(args):
     day = Day15(args[1])
