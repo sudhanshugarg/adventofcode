@@ -13,6 +13,7 @@ class Node:
         self.pos = pos
         self.direction = a
         self.distance = b
+        self.path = []
 
     def __eq__(self, other):
         return self.distance == other.distance
@@ -37,17 +38,27 @@ class Day16:
 
         # L U R D
         self.dirs = [[0, -1], [-1, 0], [0, 1], [1, 0]]
+        self.best_tile = [[False for j in range(self.n)] for i in range(self.m)]
+
+    def _update_best_tile(self, path: List[Node]):
+        for curr in path:
+            self.best_tile[curr.pos[0]][curr.pos[1]] = True
 
     def part1(self):
         visited = [[[False for k in range(4)] for j in range(self.n)] for i in range(self.m)]
 
         pq = []
+        mind = -1
         # east = 2
         heapq.heappush(pq, Node(self.s, 2, 0))
         while len(pq) > 0:
             curr = heapq.heappop(pq)
             if curr.pos[0] == self.e[0] and curr.pos[1] == self.e[1]:
-                return curr.distance
+                if mind == -1 or curr.distance == mind:
+                    mind = curr.distance
+                    self._update_best_tile(curr.path)
+                else:
+                    return mind
 
             visited[curr.pos[0]][curr.pos[1]][curr.direction] = True
 
@@ -67,12 +78,22 @@ class Day16:
                 else:
                     distance += 2001
 
-                heapq.heappush(pq, Node([nr, nc], nd, distance))
+                nextNode = Node([nr, nc], nd, distance)
+                nextNode.path = list(curr.path)
+                nextNode.path.append(curr)
+                heapq.heappush(pq, nextNode)
+        return mind
 
-        return -1
 
     def part2(self):
-        return -1
+        # assumes part1 has been run
+        tiles = 0
+        for i in range(self.m):
+            for j in range(self.n):
+                if self.best_tile[i][j]:
+                    tiles += 1
+        return tiles + 1 #for E tile
+
 
 
 def run(args):
