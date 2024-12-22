@@ -36,7 +36,31 @@ class Day15:
 
         self.grid = [[gridstr[i][j] for j in range(self.n)] for i in range(self.m)]
         self.grid[self.r][self.c] = '.' #change robot position to be empty
-        # self.dirs = [[0, -1], [-1, 0], [0, 1], [1, 0]] #L, U, R, D
+        self.dirs = [[0, -1], [-1, 0], [0, 1], [1, 0]] #L, U, R, D
+
+        self.g = [[self._getWide(gridstr[i][j], i, j) for j in range(self.n)] for i in range(self.m)]
+        self.p = 2 * self.n
+        self.movement = {
+            '<' : 0,
+            '^' : 1,
+            '>' : 2,
+            'v' : 3,
+        }
+
+    def _getWide(self, s: str, i: int, j: int):
+        if s == "#":
+            return "##"
+        elif s == "O":
+            return "[]"
+        elif s == ".":
+            return ".."
+        elif s == "@":
+            self.row = i
+            self.col = 2 * j
+            return "@."
+        else:
+            print("something wrong")
+            return "!!"
 
     def _updateLeft(self, row: int):
         nextAvailable = -1
@@ -208,8 +232,32 @@ class Day15:
         return self._printAndComputeGrid(True)
 
     def part2(self):
+        # start from self.row and self.col
+        # for each direction, try and move there. If you can move, no issues
+        # if you have some obstacle, then do accordingly
+        for i in range(len(self.directions)):
+            d = self.directions[i]
+            self._move(self.movement[d])
+
         return -1
 
+    def _move(self, d: int):
+        nr = self.row + self.dirs[d][0]
+        nc = self.col + self.dirs[d][1]
+
+        # now we are using self.m and self.p for max row and max col
+        if nr < 0 or nr >= (self.m - 1) or nc < 0 or nc >= (self.p - 2) or (self.g[nr][nc] == '#'):
+            return
+
+        if self.g[nr][nc] == '.':
+            self.row = nr
+            self.col = nc
+            return
+
+        # now it can only be [ or ]
+        # this means we need to do two dfs
+        # first dfs is to get whether movement is possible
+        # second dfs is to actually do the movement, given that it is possible
 
 def run(args):
     day = Day15(args[1])
