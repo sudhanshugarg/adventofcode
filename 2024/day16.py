@@ -18,7 +18,7 @@ class Node:
         return self.distance == other.distance
 
     def __lt__(self, other):
-        return self.distance < other.distance
+        return self.distance <= other.distance
 
 class Day16:
     def __init__(self, filename: str):
@@ -42,7 +42,8 @@ class Day16:
         visited = [[[False for k in range(4)] for j in range(self.n)] for i in range(self.m)]
 
         pq = []
-        heapq.heappush(pq, Node(self.s, 0, 0))
+        # east = 2
+        heapq.heappush(pq, Node(self.s, 2, 0))
         while len(pq) > 0:
             curr = heapq.heappop(pq)
             if curr.pos[0] == self.e[0] and curr.pos[1] == self.e[1]:
