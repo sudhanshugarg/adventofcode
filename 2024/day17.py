@@ -103,7 +103,7 @@ class Day17:
 
         # stopping condition
         if output_index == 0:
-            # print(f"found {a}")
+            print(f"found {a}")
             return a
 
         # now try 8 different values of a
