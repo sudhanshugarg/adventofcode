@@ -72,7 +72,7 @@ class Day18:
                 if nr < 0 or nr >= self.n or nc < 0 or nc >= self.n or added[nr][nc] or (not self.g[nr][nc]):
                     continue
 
-                added[curr.r][curr.c] = True
+                added[nr][nc] = True
                 next_node = Node(nr, nc, curr.dist + 1)
                 heapq.heappush(pq, next_node)
 
