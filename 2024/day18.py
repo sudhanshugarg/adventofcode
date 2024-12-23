@@ -21,21 +21,17 @@ class Node:
         return self.dist < other.dist
 
 class Day18:
-    def __init__(self, filename: str, grid: int, take: int = -1):
+    def __init__(self, filename: str, grid: int, take: int):
         with open(filename, 'r') as f:
             self.input = f.readlines()
 
         self.n = grid
         self.g = [[True for j in range(self.n)] for i in range(self.n)]
-        self.parse(take)
+        self.parse(0, take)
         self.dirs = [[0, -1], [-1, 0], [0, 1], [1, 0]]  # L U R D
 
-    def parse(self, take: int):
-        n = take
-        if n < 0:
-            n = len(self.input)
-
-        for i in range(n):
+    def parse(self, start: int, take: int):
+        for i in range(start, take):
             arr = self.input[i].split(',')
             p = list(map(int, arr))
             self.g[p[0]][p[1]] = False
@@ -52,7 +48,7 @@ class Day18:
 
     def part1(self):
         pq = []
-        self.print_grid()
+        # self.print_grid()
 
         start = Node(0, 0, 0)
         heapq.heappush(pq, start)
@@ -78,14 +74,25 @@ class Day18:
 
         return -1
 
-    def part2(self):
+    def part2(self, take: int):
+        # assumes part 1 has already been run
+
+        for i in range(take, len(self.input)):
+            self.parse(i, i + 1)
+            dist = self.part1()
+            byte = self.input[i].rstrip("\n")
+            if dist < 0:
+                return byte
+            # else:
+                # print(f"after falling byte {i}, {byte}, dist={dist}")
+
         return -1
 
 
 def run(args):
     day = Day18(args[1], int(args[2]), int(args[3]))
     print(day.part1())
-    print(day.part2())
+    print(day.part2(int(args[3])))
 
 
 if __name__ == "__main__":
