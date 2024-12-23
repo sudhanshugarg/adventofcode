@@ -27,41 +27,38 @@ class Day19:
 
     def _is_possible_helper(self, d: str):
         if len(d) == 0:
-            return True
+            return 1
 
         if d in self.possible_designs:
             return self.possible_designs[d]
 
-        self.possible_designs[d] = False
+        self.possible_designs[d] = 0
         for t in self.towels:
             if not self.is_prefix(t, d):
                 # print(f"{t} is not a prefix of {d}")
                 continue
 
-            possible = self._is_possible_helper(d[len(t):])
-            if possible:
-                self.possible_designs[d] = True
-                break
+            ways = self._is_possible_helper(d[len(t):])
+            self.possible_designs[d] += ways
 
         # print(f"testing design: {d}, result: {self.possible_designs[d]}")
         return self.possible_designs[d]
 
-    def part1(self):
+    def part1And2(self):
         possible = 0
+        ways = 0
         n = len(self.designs)
         for i in range(n):
-            if self._is_possible_helper(self.designs[i]):
+            count = self._is_possible_helper(self.designs[i])
+            if count > 0:
                 possible += 1
-        return possible
+            ways += count
 
-    def part2(self):
-        return -1
-
+        return [possible, ways]
 
 def run(args):
     day = Day19(args[1])
-    print(day.part1())
-    print(day.part2())
+    print(day.part1And2())
 
 
 if __name__ == "__main__":
