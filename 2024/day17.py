@@ -15,8 +15,6 @@ class Day17:
         self.c = self._parseRegister(self.input[2])
         self.instructions = self._parseInstructions(self.input[4])
         self.instructions2 = self.instructions[:-2]
-        # print(f"{self.a+1}, {self.b+1}, {self.c+1}")
-        # print(f"{self.instructions}")
 
     def _parseRegister(self, s: str):
         return int(s.split(':')[1])
@@ -85,24 +83,23 @@ class Day17:
             new_instr = self.instructions[:-2]
             # note that the starting value of a is enough to determine the values of b and c for
             # each loop
-            return self.find_lowest_a(0, new_instr, repeats, fives)
+            return self._find_lowest_a_helper(0, new_instr, n, fives)
 
         return -1
 
-    def find_lowest_a(self, a: int, instr: List[int], repeats: int, fives: int):
-        return self._find_lowest_a_helper(a, instr, repeats, repeats)
-
-    def _find_lowest_a_helper(self, a: int, instr: List[int], output_index: int, output_size: int):
+    def _find_lowest_a_helper(self, a: int, instr: List[int], output_index: int, output_size_per_iteration: int):
         # stopping condition
         if output_index < 0:
             print("should never happen")
             return -1
 
         # first check that if we start with {a}, then will the output be as intended
-        if output_index < output_size:
+        n_instr = len(self.instructions)
+        if output_index < n_instr:
             output_arr = self.part1(instr, a, 0, 0)
-            if output_arr[0] != self.instructions[output_index]:
-                return -1
+            for i in range(output_size_per_iteration):
+                if output_arr[i] != self.instructions[output_index + i]:
+                    return -1
 
         # stopping condition
         if output_index == 0:
@@ -115,7 +112,8 @@ class Day17:
             next_a = a * 8 + i
             if next_a == 0:
                 continue
-            result = self._find_lowest_a_helper(next_a, instr, output_index - 1, output_size)
+            result = self._find_lowest_a_helper(next_a, instr, output_index - output_size_per_iteration,
+                                                output_size_per_iteration)
             if result > 0 and (minA == -1 or minA > result):
                 minA = result
 
