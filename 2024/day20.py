@@ -113,7 +113,7 @@ class Day20:
                     x_dist = abs(x)
                     # low and high for y, inclusive
                     y_low = -(radius - x_dist)
-                    y_high = radius + x_dist
+                    y_high = radius - x_dist
                     for y in range(y_low, y_high + 1):
                         nr = i + x
                         nc = j + y
