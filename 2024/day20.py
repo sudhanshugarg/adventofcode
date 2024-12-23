@@ -5,6 +5,7 @@ import time
 import os
 from typing import List
 
+
 class Day20:
     def __init__(self, filename: str):
         with open(filename, 'r') as f:
@@ -22,6 +23,9 @@ class Day20:
 
         self.dirs = [[0, -1], [-1, 0], [0, 1], [1, 0]]  # L U R D
         self.position = [[-1 for j in range(self.n)] for i in range(self.m)]
+        self.grid = [[self.input[i][j] for j in range(self.n)] for i in range(self.m)]
+        self.grid[self.s[0]][self.s[1]] = '.'
+        self.grid[self.e[0]][self.e[1]] = '.'
 
     def init_racetrack_pos(self):
         self.position[self.s[0]][self.s[1]] = 0
@@ -86,15 +90,52 @@ class Day20:
                             freq_counter[savings] += 1
 
         total = 0
-        for key in freq_counter:
-            print(f"There are {freq_counter[key]} cheats that save {key} picoseconds")
+        sorted_freq_counter = dict(sorted(freq_counter.items()))
+        for key in sorted_freq_counter:
+            # print(f"There are {sorted_freq_counter[key]} cheats that save {key} picoseconds")
             if key >= 100:
-                total += freq_counter[key]
+                total += sorted_freq_counter[key]
 
         return total
 
     def part2(self):
-        return -1
+        # we start from every open position, and go in a radius of manhattan 20 around it
+        radius = 20
+        at_least = 100
+        freq_counter = dict()
+        for i in range(1, self.m - 1):
+            for j in range(1, self.n - 1):
+                if self.grid[i][j] == '#':
+                    continue
+
+                # take radius
+                for x in range(-radius, radius + 1):
+                    x_dist = abs(x)
+                    # low and high for y, inclusive
+                    y_low = -(radius - x_dist)
+                    y_high = radius + x_dist
+                    for y in range(y_low, y_high + 1):
+                        nr = i + x
+                        nc = j + y
+                        manhattan = abs(nr - i) + abs(nc - j)
+                        if ((nr < 1 or nr >= (self.m - 1) or nc < 1 or nc >= (self.n - 1)) or
+                                (self.grid[nr][nc] == '#') or ((self.position[i][j] + manhattan) >= self.position[nr][nc])):
+                            continue
+
+                        savings = self.position[nr][nc] - (self.position[i][j] + manhattan)
+                        if savings not in freq_counter:
+                            freq_counter[savings] = 1
+                        else:
+                            freq_counter[savings] += 1
+
+        total = 0
+        sorted_freq_counter = dict(sorted(freq_counter.items()))
+        for key in sorted_freq_counter:
+            if key >= at_least:
+                print(f"There are {sorted_freq_counter[key]} cheats that save {key} picoseconds")
+                total += sorted_freq_counter[key]
+
+        return total
 
 
 def run(args):
