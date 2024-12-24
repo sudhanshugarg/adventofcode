@@ -103,7 +103,7 @@ class Keypad(ABC):
                     print(f"shortest from {i} to {j} is {paths}")
 
     @abstractmethod
-    def get_paths(self, s: str):
+    def get_paths(self, s: List[str]):
         pass
 
 
@@ -118,27 +118,30 @@ class NumericKeypad(Keypad):
 
         super().__init__(keypad, 10)
 
-    def get_paths(self, s: str):
-        paths = [""]
-        start = self.A
-        for i in range(len(s)):
-            if s[i] == 'A':
-                end = self.A
-            else:
-                end = ord(s[i]) - ord('0')
+    def get_paths(self, inputs: List[str]):
+        all_paths = []
+        for s in inputs:
+            paths = [""]
+            start = self.A
+            for i in range(len(s)):
+                if s[i] == 'A':
+                    end = self.A
+                else:
+                    end = ord(s[i]) - ord('0')
 
-            # print(f"n: going from {start} to {end}, path is {self._get_path_pair(start, end)}")
-            possible_paths = self._get_paths_pair(start, end)
-            next_paths = []
-            for path_so_far in paths:
-                for added_path in possible_paths:
-                    next_path = f"{path_so_far}{added_path}"
-                    next_paths.append(next_path)
+                # print(f"n: going from {start} to {end}, path is {self._get_path_pair(start, end)}")
+                possible_paths = self._get_paths_pair(start, end)
+                next_paths = []
+                for path_so_far in paths:
+                    for added_path in possible_paths:
+                        next_path = f"{path_so_far}{added_path}"
+                        next_paths.append(next_path)
 
-            paths = next_paths
-            start = end
+                paths = next_paths
+                start = end
 
-        return self._get_shortest_paths(paths)
+            all_paths += paths
+        return self._get_shortest_paths(all_paths)
 
     def get_source_path(self, s: str):
         curr = self.keyToPos[self.A]
@@ -172,29 +175,32 @@ class DirectionalKeypad(Keypad):
         # self.shortest_paths[3][4] = ">>^"
         # self.shortest_paths[4][3] = "v<<"
 
-    def get_paths(self, s: str):
-        paths = [""]
-        start = self.A
-        for i in range(len(s)):
-            if s[i] == 'A':
-                end = self.A
-            else:
-                end = self.move_dict[s[i]]
+    def get_paths(self, inputs: List[str]):
+        all_paths = []
+        for s in inputs:
+            paths = [""]
+            start = self.A
+            for i in range(len(s)):
+                if s[i] == 'A':
+                    end = self.A
+                else:
+                    end = self.move_dict[s[i]]
 
-            # print(f"d: going from {self.move[start]} to {self.move[end]}, path is {self._get_path_pair(start, end)}")
+                # print(f"d: going from {self.move[start]} to {self.move[end]},
+                # path is {self._get_path_pair(start, end)}")
+                # print(f"n: going from {start} to {end}, path is {self._get_path_pair(start, end)}")
+                possible_paths = self._get_paths_pair(start, end)
+                next_paths = []
+                for path_so_far in paths:
+                    for added_path in possible_paths:
+                        next_path = f"{path_so_far}{added_path}"
+                        next_paths.append(next_path)
 
-            # print(f"n: going from {start} to {end}, path is {self._get_path_pair(start, end)}")
-            possible_paths = self._get_paths_pair(start, end)
-            next_paths = []
-            for path_so_far in paths:
-                for added_path in possible_paths:
-                    next_path = f"{path_so_far}{added_path}"
-                    next_paths.append(next_path)
+                paths = next_paths
+                start = end
+            all_paths += paths
 
-            paths = next_paths
-            start = end
-
-        return self._get_shortest_paths(paths)
+        return self._get_shortest_paths(all_paths)
 
     def get_source_path(self, s: str):
         curr = self.keyToPos[self.A]
@@ -223,51 +229,26 @@ class Day21:
         self.numeric = NumericKeypad()
         self.directional = DirectionalKeypad()
 
+    def get_complexity(self, s: str, n: int):
+        return int(s[:-1]) * n
+
     def part1(self):
         # self.numeric.print_shortest_paths()
         # print("directional now")
         # self.directional.print_shortest_paths()
 
+        total = 0
         for i in range(len(self.input)):
-            print(self.input[i])
-            p1 = self.numeric.get_paths(self.input[i])
-            print(f"p1: {p1}")
-            # # p1a = "v<<A>>^A"
-            # # p1b = "v<<A>^>A"
-            # p2 = self.directional.get_path(p1)
-            # # print(f"p2: {p2}")
-            # p3 = self.directional.get_path(p2)
-            # p3 = "<v<A>>^AvA^A<vA<AA>>^AAvA<^A>AAvA^A<vA>^AA<A>A<v<A>A>^AAAvA<^A>A"
-            # print(f"p3: {p3}")
-            # # p3a = self.directional.get_path(p1a)
-            # # print("next one now")
-            # # p3b = self.directional.get_path(p1b)
-            # # print(f"for {p1a}, path={p3a}, len: {len(p3a)}")
-            # # print(f"for {p1b}, path={p3b}, len: {len(p3b)}")
-            # p2_reverse = self.directional.get_source_path(p3)
-            # print(f"p2_reverse: {p2_reverse}")
-            #
-            # if p2 == p2_reverse:
-            #     print(f"yes p2 and reverse are good, len = {len(p2)}")
-            # else:
-            #     print(f"NO, not equal, len(p2) = {len(p2)}, len(p2_reverse) = {len(p2_reverse)}")
-            #
-            # p1_reverse2 = self.directional.get_source_path(p2_reverse)
-            # print(f"p1_reverse2: {p1_reverse2}")
-            #
-            # if p1 == p1_reverse2:
-            #     print(f"yes p1 and p1_reverse2 are good, len = {len(p1)}")
-            # else:
-            #     print(f"NO, not equal, len(p1) = {len(p1)}, len(p1_reverse2) = {len(p1_reverse2)}")
-            #
-            # init_1 = self.numeric.get_source_path(p1)
-            # print(f"init_1: {init_1}")
-            #
-            # init_2 = self.numeric.get_source_path(p1_reverse2)
-            # print(f"init_2: {init_2}")
-            #
-            # # print(f"for {self.input[i]}, path={p3}, len: {len(p3)}")
-        return len(self.input)
+            p1 = self.numeric.get_paths([self.input[i]])
+            # print(f"p1: {p1}, len: {len(p1[0])}")
+            p2 = self.directional.get_paths(p1)
+            # print(f"p2: {p2}, len: {len(p2[0])}")
+            p3 = self.directional.get_paths(p2)
+            # print(f"p3: {p3}, len: {len(p3[0])}")
+            print(f"{self.input[i]}: {len(p3[0])}")
+            total += self.get_complexity(self.input[i], len(p3[0]))
+
+        return total
 
     def part2(self):
         return -1
