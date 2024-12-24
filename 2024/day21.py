@@ -21,13 +21,14 @@ class Keypad(ABC):
         self.max_key = max_key
         self.A = max_key
         self.shortest_path = [["" for j in range(self.max_key + 1)] for i in range(self.max_key + 1)]
-        self.dirs = [[0, -1], [-1, 0], [0, 1], [1, 0]]
-        self.move = ["<", "^", ">", "v"]
+        self.dirs = [[-1, 0], [0, 1], [1, 0], [0, -1]]  # U R D L
+        self.move = ["^", ">", "v", "<", "A"]
         self.move_dict: dict[str, int] = {
-            "<": 0,
-            "^": 1,
-            ">": 2,
-            "v": 3
+            "<": 3,
+            "^": 0,
+            ">": 1,
+            "v": 2,
+            "A": 4
         }
         self._create_shortest_paths()
 
@@ -62,6 +63,11 @@ class Keypad(ABC):
     def _get_path_pair(self, key1: int, key2: int):
         return self.shortest_path[key1][key2] + "A"
 
+    def print_shortest_paths(self):
+        for i in range(self.max_key + 1):
+            for j in range(self.max_key + 1):
+                print(f"shortest from {i} to {j} is {self._get_path_pair(i, j)}")
+
     @abstractmethod
     def get_path(self, s: str):
         pass
@@ -87,7 +93,7 @@ class NumericKeypad(Keypad):
             else:
                 end = ord(s[i]) - ord('0')
 
-            # print(f"going from {start} to {end}, path is {self._get_path_pair(start, end)}")
+            # print(f"n: going from {start} to {end}, path is {self._get_path_pair(start, end)}")
             path += self._get_path_pair(start, end)
             start = end
 
@@ -97,10 +103,12 @@ class NumericKeypad(Keypad):
 class DirectionalKeypad(Keypad):
     def __init__(self):
         keypad = [
-            [-1, 1, 4],
-            [0, 3, 2]
+            [-1, 0, 4],
+            [3, 2, 1]
         ]
         super().__init__(keypad, 4)
+        self.shortest_path[3][4] = ">>^"
+        self.shortest_path[4][3] = "v<<"
 
     def get_path(self, s: str):
         path = ""
@@ -111,9 +119,24 @@ class DirectionalKeypad(Keypad):
             else:
                 end = self.move_dict[s[i]]
 
-            # print(f"going from {start} to {end}, path is {self._get_path_pair(start, end)}")
+            # print(f"d: going from {self.move[start]} to {self.move[end]}, path is {self._get_path_pair(start, end)}")
             path += self._get_path_pair(start, end)
             start = end
+
+        return path
+
+    def get_source_path(self, s: str):
+        curr = self.keyToPos[self.A]
+        path = ""
+        for i in range(len(s)):
+            key = self.move_dict[s[i]]
+            # print(curr)
+            if key == self.A:
+                which = self.keypad[curr[0]][curr[1]]
+                path += self.move[which]
+                continue
+            curr[0] += self.dirs[key][0]
+            curr[1] += self.dirs[key][1]
 
         return path
 
@@ -121,18 +144,46 @@ class Day21:
     def __init__(self, filename: str):
         self.input = []
         with open(filename, 'r') as f:
-            line = f.readline().rstrip("\n")
-            self.input.append(line)
+            for line in f:
+                self.input.append(line.rstrip("\n"))
+
+        print(self.input)
 
         self.numeric = NumericKeypad()
         self.directional = DirectionalKeypad()
 
     def part1(self):
+        # self.numeric.print_shortest_paths()
+        # print("directional now")
+        # self.directional.print_shortest_paths()
+
+        # print(self.directional._get_path_pair(3, 0))
+        # print(self.directional._get_path_pair(3, 1))
+        # print(self.directional._get_path_pair(3, 2))
+        # print(self.directional._get_path_pair(3, 4))
+        # print(self.directional._get_path_pair(3, 3))
         for i in range(len(self.input)):
             p1 = self.numeric.get_path(self.input[i])
-            # p2 = self.directional.get_path(p1)
-            p3 = self.directional.get_path(p1)
-            print(f"for {self.input[i]}, path={p3}, len: {len(p3)}")
+            print(f"p1: {p1}")
+            # p1a = "v<<A>>^A"
+            # p1b = "v<<A>^>A"
+            p2 = self.directional.get_path(p1)
+            print(f"p2: {p2}")
+            p3 = self.directional.get_path(p2)
+            p3 = "<v<A>>^AvA^A<vA<AA>>^AAvA<^A>AAvA^A<vA>^AA<A>A<v<A>A>^AAAvA<^A>A"
+            print(f"p3: {p3}")
+            # p3a = self.directional.get_path(p1a)
+            # print("next one now")
+            # p3b = self.directional.get_path(p1b)
+            # print(f"for {p1a}, path={p3a}, len: {len(p3a)}")
+            # print(f"for {p1b}, path={p3b}, len: {len(p3b)}")
+            p2_reverse = self.directional.get_source_path(p3)
+            print(f"p2_reverse: {p2_reverse}")
+            if p2 == p2_reverse:
+                print("yes p2 and reverse are good")
+            else:
+                print("NO, not equal")
+            # print(f"for {self.input[i]}, path={p3}, len: {len(p3)}")
         return len(self.input)
 
     def part2(self):
