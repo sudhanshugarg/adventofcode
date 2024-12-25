@@ -12,35 +12,52 @@ class Day23:
 
         self.k_cliques: List[set] = list()
         self.g = None
-        self.node_int_map = dict()
+        self.str_int_map = dict()
+        self.int_str_map = dict()
+        self.starts_with_t = dict()
         self.n = None
 
         self.build_graph()
+        # print(self.str_int_map)
+        # print(self.int_str_map)
 
     def build_graph(self):
         edge_number = len(self.input)
         node_index = 0
         for i in range(edge_number):
             edge = self.input[i].rstrip("\n").split("-")
-            if edge[0] not in self.node_int_map:
-                self.node_int_map[edge[0]] = node_index
+            if edge[0] not in self.str_int_map:
+                self.str_int_map[edge[0]] = node_index
+                self.int_str_map[node_index] = edge[0]
+                if edge[0][0] == 't':
+                    self.starts_with_t[node_index] = True
+                else:
+                    self.starts_with_t[node_index] = False
+
                 node_index += 1
-            if edge[1] not in self.node_int_map:
-                self.node_int_map[edge[1]] = node_index
+
+            if edge[1] not in self.str_int_map:
+                self.str_int_map[edge[1]] = node_index
+                self.int_str_map[node_index] = edge[1]
+                if edge[1][0] == 't':
+                    self.starts_with_t[node_index] = True
+                else:
+                    self.starts_with_t[node_index] = False
+
                 node_index += 1
 
         self.n = node_index
-        g = [[False for j in range(self.n)] for i in range(self.n)]
+        self.g = [[False for j in range(self.n)] for i in range(self.n)]
 
         edges = set()
         for i in range(edge_number):
             edge = self.input[i].rstrip("\n").split("-")
-            u = self.node_int_map[edge[0]]
-            v = self.node_int_map[edge[1]]
-            g[u][v] = True
-            g[v][u] = True
+            u = self.str_int_map[edge[0]]
+            v = self.str_int_map[edge[1]]
+            self.g[u][v] = True
+            self.g[v][u] = True
 
-            edge_set = {u, v}
+            edge_set = frozenset({u, v})
             edges.add(edge_set)
 
         self.k_cliques.append(edges)
@@ -57,10 +74,13 @@ class Day23:
         for index in range(start, k - 1):
             self.k_cliques.append(set())
             cliques = self.k_cliques[index - 1]
+            # print(index)
+            # print(cliques)
             # go through every pair of cliques
 
             for c1 in cliques:
                 for c2 in cliques:
+                    # print(f"comparing: {c1}, {c2}")
                     d1 = c1.difference(c2)
                     if len(d1) != 1:
                         continue
@@ -68,18 +88,39 @@ class Day23:
                     if len(d2) != 1:
                         continue
 
-                    u = d1.pop()
-                    v = d2.pop()
+                    # print(f"found: {d1}, {d2}")
+                    u = next(iter(d1))
+                    v = next(iter(d2))
+                    # print(f"vertex: [{u},{v}]")
                     if self.g[u][v]:
-                        next_clique = c1.copy()
-                        next_clique.add(d2)
-                        self.k_cliques[index].add(next_clique)
+                        next_clique = set(c1)
+                        next_clique.add(v)
+                        self.k_cliques[index].add(frozenset(next_clique))
+
+    def print_and_count_cliques(self, k: int, should_print: bool = False):
+        starting_with_t = 0
+        cliques = self.k_cliques[k - 2]  # set
+        all_cliques = ""
+        for clique in cliques:  # frozenset
+            found = False
+            c = "["
+            for elem in clique:  # element of frozenset
+                c += self.int_str_map[elem] + ","
+                if not found and self.starts_with_t[elem]:
+                    starting_with_t += 1
+                    found = True
+            c += "], "
+            all_cliques += c
+
+        if should_print:
+            print(all_cliques)
+
+        return starting_with_t
 
     def part1(self):
-        self.build_k_clique(3)
-        cliques = self.k_cliques[1]
-        print(cliques)
-        return len(cliques)
+        k = 3
+        self.build_k_clique(k)
+        return self.print_and_count_cliques(k)
 
     def part2(self):
         return -1
