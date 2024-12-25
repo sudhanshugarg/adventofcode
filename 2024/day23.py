@@ -100,30 +100,40 @@ class Day23:
     def print_and_count_cliques(self, k: int, should_print: bool = False):
         starting_with_t = 0
         cliques = self.k_cliques[k - 2]  # set
-        all_cliques = ""
+        all_cliques = []
         for clique in cliques:  # frozenset
             found = False
-            c = "["
+            c = []
             for elem in clique:  # element of frozenset
-                c += self.int_str_map[elem] + ","
+                c.append(self.int_str_map[elem])
                 if not found and self.starts_with_t[elem]:
                     starting_with_t += 1
                     found = True
-            c += "], "
-            all_cliques += c
+            all_cliques.append(c)
 
         if should_print:
             print(all_cliques)
 
-        return starting_with_t
+        return starting_with_t, all_cliques
 
     def part1(self):
         k = 3
         self.build_k_clique(k)
-        return self.print_and_count_cliques(k)
+        starting_with_t, all_cliques = self.print_and_count_cliques(k)
+        return starting_with_t
 
     def part2(self):
-        return -1
+        k = 4
+        print(f"3-cliques: {len(self.k_cliques[3-2])}")
+        while True:
+            self.build_k_clique(k)
+            print(f"{k}-cliques: {len(self.k_cliques[k-2])}")
+            if len(self.k_cliques[k-2]) == 0:
+                break
+            k += 1
+
+        starting_with_t, all_cliques = self.print_and_count_cliques(k - 1, True)
+        return ','.join(sorted(all_cliques[0]))
 
 
 def run(args):
